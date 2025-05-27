@@ -28,7 +28,7 @@ let package = Package(
             name: "BEZoteroTranslatorsTests",
             dependencies: ["BEZoteroTranslators"],
             resources: [
-                .copy("TestArticles")
+                .copy("Translators")
             ]),
     ]
 ) 

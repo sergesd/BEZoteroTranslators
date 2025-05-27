@@ -88,16 +88,83 @@ public class ZoteroWebView: WKWebView {
     
     public func loadTranslator(_ translatorCode: String) {
         self.translatorCode = translatorCode
+        print("Loading translator code...")
         
-        let script = """
-        // Initialize translator
-        window.zoteroTranslator = new Zotero.Translator(\(translatorCode));
+        // Split the code at the test cases marker
+        let parts = translatorCode.components(separatedBy: "/** BEGIN TEST CASES **/")
+        guard let actualCode = parts.first else {
+            let error = NSError(domain: "ZoteroWebView", 
+                              code: -1, 
+                              userInfo: [NSLocalizedDescriptionKey: "Could not find translator code"])
+            zoteroDelegate?.zoteroWebView(self, didFailWithError: error)
+            return
+        }
+        
+        // First validate the JavaScript code
+        let validationScript = """
+        try {
+            console.log('Validating translator code...');
+            // Create a function from the translator code
+            const translatorFunction = new Function('return ' + `\(actualCode)`);
+            const translator = translatorFunction();
+            console.log('Translator validation successful');
+            true;
+        } catch (e) {
+            console.error('Translator validation failed:', e);
+            throw e;  // Throw the error instead of returning it as a string
+        }
         """
         
-        evaluateJavaScript(script) { [weak self] (result, error) in
+        evaluateJavaScript(validationScript) { [weak self] (result, error) in
             if let error = error {
-                print("Error loading translator: \(error)")
+                print("Error validating translator: \(error)")
                 self?.zoteroDelegate?.zoteroWebView(self!, didFailWithError: error)
+                return
+            }
+            
+            print("Translator validation successful, initializing translator...")
+            // If we get here, the code is valid, so load it
+            let script = """
+            try {
+                console.log('Initializing translator...');
+                // Wait for Zotero to be available
+                if (typeof Zotero === 'undefined') {
+                    throw new Error('Zotero runtime not loaded');
+                }
+                
+                // Create a function from the translator code
+                const translatorFunction = new Function('return ' + `\(actualCode)`);
+                const translator = translatorFunction();
+                
+                // Create a new translator instance
+                window.zoteroTranslator = new Zotero.Translator('web');
+                
+                // Copy the functions from our translator
+                window.zoteroTranslator.detectWeb = translator.detectWeb;
+                window.zoteroTranslator.doWeb = translator.doWeb;
+                window.zoteroTranslator.getSearchResults = translator.getSearchResults;
+                window.zoteroTranslator.scrape = translator.scrape;
+                
+                // Set up the translator
+                window.zoteroTranslator.setTranslator('951c027d-74ac-47d4-a107-9c3069ab7b48');
+                window.zoteroTranslator.setDocument(document);
+                
+                console.log('Translator initialized successfully');
+                true;
+            } catch (e) {
+                console.error('Error initializing translator:', e);
+                throw e;  // Throw the error instead of returning it as a string
+            }
+            """
+            
+            self?.evaluateJavaScript(script) { [weak self] (result, error) in
+                if let error = error {
+                    print("Error loading translator: \(error)")
+                    self?.zoteroDelegate?.zoteroWebView(self!, didFailWithError: error)
+                    return
+                }
+                
+                print("Translator loaded successfully")
             }
         }
     }
@@ -120,30 +187,78 @@ public class ZoteroWebView: WKWebView {
     
     public func detectWeb() {
         evaluateJavaScript("""
-            window.zoteroTranslator.detectWeb(document, window.location.href)
+            try {
+                if (!window.zoteroTranslator) {
+                    throw new Error('Translator not initialized');
+                }
+                const type = window.zoteroTranslator.detectWeb(document, window.location.href);
+                if (!type) {
+                    throw new Error('No type detected');
+                }
+                type;
+            } catch (e) {
+                console.error('Error in detectWeb:', e);
+                throw e;
+            }
         """) { [weak self] (result, error) in
             if let error = error {
+                print("Error during detection: \(error)")
                 self?.zoteroDelegate?.zoteroWebView(self!, didFailWithError: error)
                 return
             }
             
             if let type = result as? String {
                 self?.zoteroDelegate?.zoteroWebView(self!, didDetectType: type)
+            } else {
+                let error = NSError(domain: "ZoteroWebView", 
+                                  code: -1, 
+                                  userInfo: [NSLocalizedDescriptionKey: "Invalid type returned from detectWeb"])
+                self?.zoteroDelegate?.zoteroWebView(self!, didFailWithError: error)
             }
         }
     }
     
     public func scrapePage() {
+        print("Starting page scrape...")
         evaluateJavaScript("""
-            window.zoteroTranslator.doWeb(document, window.location.href)
+            try {
+                console.log('Executing doWeb...');
+                if (!window.zoteroTranslator) {
+                    throw new Error('Translator not initialized');
+                }
+                const result = window.zoteroTranslator.doWeb(document, window.location.href);
+                if (!result || !Array.isArray(result)) {
+                    throw new Error('Invalid result from doWeb: ' + JSON.stringify(result));
+                }
+                console.log('doWeb completed with result:', result);
+                result;
+            } catch (e) {
+                console.error('Error in doWeb:', e);
+                throw e;
+            }
         """) { [weak self] (result, error) in
             if let error = error {
+                print("Error during scraping: \(error)")
                 self?.zoteroDelegate?.zoteroWebView(self!, didFailWithError: error)
                 return
             }
             
+            print("Scraping completed with result: \(String(describing: result))")
             if let items = result as? [[String: Any]] {
+                if items.isEmpty {
+                    let error = NSError(domain: "ZoteroWebView", 
+                                      code: -1, 
+                                      userInfo: [NSLocalizedDescriptionKey: "No items were scraped"])
+                    self?.zoteroDelegate?.zoteroWebView(self!, didFailWithError: error)
+                    return
+                }
+                print("Successfully scraped \(items.count) items")
                 self?.zoteroDelegate?.zoteroWebView(self!, didScrapeItems: items)
+            } else {
+                let error = NSError(domain: "ZoteroWebView", 
+                                  code: -1, 
+                                  userInfo: [NSLocalizedDescriptionKey: "Invalid result format from scraping"])
+                self?.zoteroDelegate?.zoteroWebView(self!, didFailWithError: error)
             }
         }
     }

@@ -7,111 +7,17 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "A3BA4220-62CD-403F-8E7B-CDE6B42E8319"
-            shouldBeEnabled = "Yes"
+            uuid = "4A367C1C-D95A-45D5-B179-887DB957731E"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Tests/BEZoteroTranslatorsTests/BEZoteroTranslatorsTests.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "25"
-            endingLineNumber = "25"
+            startingLineNumber = "60"
+            endingLineNumber = "60"
             landmarkName = "testWashingtonPostArticle()"
             landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "B15EE39E-9683-4F2F-A07B-1C82B3A192E2"
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "Tests/BEZoteroTranslatorsTests/BEZoteroTranslatorsTests.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "34"
-            endingLineNumber = "34"
-            landmarkName = "testWashingtonPostArticle()"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "984F1FDB-93BA-4420-B0EB-EC674006064F"
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "Sources/BEZoteroTranslators/ZoteroWebView.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "92"
-            endingLineNumber = "92"
-            landmarkName = "loadTranslator(_:)"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "C80F78C1-B53D-4851-AB27-3A02331D726F"
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "Tests/BEZoteroTranslatorsTests/BEZoteroTranslatorsTests.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "41"
-            endingLineNumber = "41"
-            landmarkName = "testWashingtonPostArticle()"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "9C18658B-4885-487E-9A86-400AF8551EE1"
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "Tests/BEZoteroTranslatorsTests/BEZoteroTranslatorsTests.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "47"
-            endingLineNumber = "47"
-            landmarkName = "testWashingtonPostArticle()"
-            landmarkType = "7">
-            <Locations>
-               <Location
-                  uuid = "9C18658B-4885-487E-9A86-400AF8551EE1 - a7292528f61843b2"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "closure #2 @Swift.MainActor () -&gt; () in BEZoteroTranslatorsTests.BEZoteroTranslatorsTests.testWashingtonPostArticle() -&gt; ()"
-                  moduleName = "BEZoteroTranslatorsTests"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/serge/Documents/ProjectRepositories/BEZoteroTranslators/Tests/BEZoteroTranslatorsTests/BEZoteroTranslatorsTests.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "47"
-                  endingLineNumber = "47">
-               </Location>
-               <Location
-                  uuid = "9C18658B-4885-487E-9A86-400AF8551EE1 - a7292528f61843b2"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "closure #2 @Swift.MainActor () -&gt; () in BEZoteroTranslatorsTests.BEZoteroTranslatorsTests.testWashingtonPostArticle() -&gt; ()"
-                  moduleName = "BEZoteroTranslatorsTests"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/serge/Documents/ProjectRepositories/BEZoteroTranslators/Tests/BEZoteroTranslatorsTests/BEZoteroTranslatorsTests.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "47"
-                  endingLineNumber = "47">
-               </Location>
-            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>
