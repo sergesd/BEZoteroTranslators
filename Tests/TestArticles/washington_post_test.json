@@ -1,0 +1,34 @@
+{
+    "type": "web",
+    "url": "file:///Tests/TestArticles/washington_post_test.html",
+    "items": [
+        {
+            "itemType": "newspaperArticle",
+            "title": "Is your lamp the right size? There's an equation for that.",
+            "creators": [
+                {
+                    "firstName": "Laura",
+                    "lastName": "Daily",
+                    "creatorType": "author"
+                }
+            ],
+            "date": "2024-07-13",
+            "ISSN": "0190-8286",
+            "abstractNote": "You don't need to be a math whiz to choose a lamp. You just need to consider function and know a bit about proportion.",
+            "language": "en-US",
+            "libraryCatalog": "www.washingtonpost.com",
+            "publicationTitle": "Washington Post",
+            "section": "Home & Garden",
+            "url": "file:///Tests/TestArticles/washington_post_test.html",
+            "attachments": [
+                {
+                    "title": "Snapshot",
+                    "mimeType": "text/html"
+                }
+            ],
+            "tags": [],
+            "notes": [],
+            "seeAlso": []
+        }
+    ]
+} 
