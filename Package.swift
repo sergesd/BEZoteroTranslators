@@ -26,6 +26,9 @@ let package = Package(
         ),
         .testTarget(
             name: "BEZoteroTranslatorsTests",
-            dependencies: ["BEZoteroTranslators"]),
+            dependencies: ["BEZoteroTranslators"],
+            resources: [
+                .copy("TestArticles")
+            ]),
     ]
 ) 

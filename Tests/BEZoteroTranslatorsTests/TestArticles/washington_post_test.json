@@ -1,6 +1,6 @@
 {
     "type": "web",
-    "url": "file:///Tests/TestArticles/washington_post_test.html",
+    "url": "file:///Tests/BEZoteroTranslatorsTests/TestArticles/washington_post_test.html",
     "items": [
         {
             "itemType": "newspaperArticle",
@@ -19,7 +19,7 @@
             "libraryCatalog": "www.washingtonpost.com",
             "publicationTitle": "Washington Post",
             "section": "Home & Garden",
-            "url": "file:///Tests/TestArticles/washington_post_test.html",
+            "url": "file:///Tests/BEZoteroTranslatorsTests/TestArticles/washington_post_test.html",
             "attachments": [
                 {
                     "title": "Snapshot",

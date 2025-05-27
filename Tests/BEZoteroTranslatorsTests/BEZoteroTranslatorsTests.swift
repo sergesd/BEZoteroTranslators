@@ -22,19 +22,16 @@ final class BEZoteroTranslatorsTests: XCTestCase {
         webView.zoteroDelegate = delegate
         
         // Load the test article
-        let testArticleURL = Bundle.module.url(forResource: "washington_post_test", withExtension: "html", subdirectory: "TestArticles")!
+        guard let testArticleURL = Bundle.module.url(forResource: "washington_post_test", withExtension: "html", subdirectory: "TestArticles") else {
+            XCTFail("Could not find test article HTML file")
+            return
+        }
         let request = URLRequest(url: testArticleURL)
         
         let expectation = XCTestExpectation(description: "Article scraping completed")
         
-        // Load the Washington Post translator
-        guard let translatorPath = Bundle.module.path(forResource: "Washington Post", ofType: "js", inDirectory: "ZoteroJS/translators"),
-              let translatorCode = try? String(contentsOfFile: translatorPath) else {
-            XCTFail("Could not load Washington Post translator")
-            return
-        }
-        
-        webView.loadTranslator(translatorCode)
+        // Load the Washington Post translator by name
+        webView.loadTranslatorByName("Washington Post")
         
         // Load the test article
         webView.load(request)
@@ -51,8 +48,8 @@ final class BEZoteroTranslatorsTests: XCTestCase {
                 XCTAssertEqual(items.count, 1)
                 
                 // Load expected results
-                guard let expectedResultsPath = Bundle.module.path(forResource: "washington_post_test", withExtension: "json", subdirectory: "TestArticles"),
-                      let expectedResultsData = try? Data(contentsOfFile: expectedResultsPath),
+                guard let expectedResultsPath = Bundle.module.path(forResource: "washington_post_test", ofType: "json", inDirectory: "TestArticles"),
+                      let expectedResultsData = try? Data(contentsOf: URL(fileURLWithPath: expectedResultsPath)),
                       let expectedResults = try? JSONSerialization.jsonObject(with: expectedResultsData) as? [String: Any],
                       let expectedItems = expectedResults["items"] as? [[String: Any]],
                       let expectedItem = expectedItems.first else {

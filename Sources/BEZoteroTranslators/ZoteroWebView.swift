@@ -9,6 +9,8 @@ public protocol ZoteroWebViewDelegate: AnyObject {
 public class ZoteroWebView: WKWebView {
     public weak var zoteroDelegate: ZoteroWebViewDelegate?
     private var translatorCode: String?
+    private var isRuntimeLoaded = false
+    private var pendingTranslatorName: String?
     
     public override init(frame: CGRect, configuration: WKWebViewConfiguration) {
         // Create a user content controller to handle JS messages
@@ -24,24 +26,35 @@ public class ZoteroWebView: WKWebView {
         userContentController.add(self, name: "zotero")
         
         // Load the Zotero runtime
-        loadZoteroRuntime()
+        loadZoteroRuntime { [weak self] error in
+            if let error = error {
+                self?.zoteroDelegate?.zoteroWebView(self!, didFailWithError: error)
+            } else {
+                self?.isRuntimeLoaded = true
+                // Load any pending translator
+                if let translatorName = self?.pendingTranslatorName {
+                    self?.loadTranslatorByName(translatorName)
+                    self?.pendingTranslatorName = nil
+                }
+            }
+        }
     }
     
     required init?(coder: NSCoder) {
         super.init(coder: coder)
     }
     
-    private func loadZoteroRuntime() {
+    public func loadZoteroRuntime(completion: @escaping (Error?) -> Void) {
         // First, load the loader
-        guard let loaderPath = Bundle.module.path(forResource: "loader", ofType: "js", inDirectory: "ZoteroJS"),
+        guard let loaderPath = Bundle.module.path(forResource: "loader", ofType: "js", inDirectory: "Resources/ZoteroJS"),
               let loaderCode = try? String(contentsOfFile: loaderPath) else {
-            print("Error: Could not load Zotero loader")
+            completion(NSError(domain: "ZoteroWebView", code: -1, userInfo: [NSLocalizedDescriptionKey: "Could not load Zotero loader"]))
             return
         }
         
         // Create a base URL for the ZoteroJS directory
         guard let zoteroJSURL = Bundle.module.url(forResource: "ZoteroJS", withExtension: nil) else {
-            print("Error: Could not find ZoteroJS directory")
+            completion(NSError(domain: "ZoteroWebView", code: -1, userInfo: [NSLocalizedDescriptionKey: "Could not find ZoteroJS directory"]))
             return
         }
         
@@ -55,16 +68,20 @@ public class ZoteroWebView: WKWebView {
         
         // Initialize Zotero
         ZoteroLoader.load().then(() => {
-            console.log('Zotero runtime loaded successfully');
+            window.webkit.messageHandlers.zotero.postMessage({
+                type: 'runtimeLoaded'
+            });
         }).catch(error => {
-            console.error('Error loading Zotero runtime:', error);
+            window.webkit.messageHandlers.zotero.postMessage({
+                type: 'error',
+                error: error.toString()
+            });
         });
         """
         
         evaluateJavaScript(script) { [weak self] (result, error) in
             if let error = error {
-                print("Error loading Zotero runtime: \(error)")
-                self?.zoteroDelegate?.zoteroWebView(self!, didFailWithError: error)
+                completion(error)
             }
         }
     }
@@ -83,6 +100,22 @@ public class ZoteroWebView: WKWebView {
                 self?.zoteroDelegate?.zoteroWebView(self!, didFailWithError: error)
             }
         }
+    }
+    
+    public func loadTranslatorByName(_ translatorName: String) {
+        if !isRuntimeLoaded {
+            // Store the translator name to load after runtime is ready
+            pendingTranslatorName = translatorName
+            return
+        }
+        
+        guard let translatorPath = Bundle.module.path(forResource: translatorName, ofType: "js", inDirectory: "Resources/ZoteroJS/translators"),
+              let translatorCode = try? String(contentsOfFile: translatorPath) else {
+            zoteroDelegate?.zoteroWebView(self, didFailWithError: NSError(domain: "ZoteroWebView", code: -1, userInfo: [NSLocalizedDescriptionKey: "Could not load translator: \(translatorName)"]))
+            return
+        }
+        
+        loadTranslator(translatorCode)
     }
     
     public func detectWeb() {
@@ -128,16 +161,11 @@ extension ZoteroWebView: WKScriptMessageHandler {
         guard let body = message.body as? [String: Any] else { return }
         
         switch body["type"] as? String {
-        case "selectItems":
-            // Handle item selection in your UI
-            if let items = body["items"] as? [String: String] {
-                // You'll need to implement this in your view controller
-                // For example, show a selection UI and call resolveItemSelection
-            }
-            
-        case "itemDone":
-            if let item = body["item"] as? [String: Any] {
-                zoteroDelegate?.zoteroWebView(self, didScrapeItems: [item])
+        case "runtimeLoaded":
+            isRuntimeLoaded = true
+            if let translatorName = pendingTranslatorName {
+                loadTranslatorByName(translatorName)
+                pendingTranslatorName = nil
             }
             
         case "error":
