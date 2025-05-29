@@ -13,7 +13,8 @@ public class ZoteroWebView: WKWebView {
     private var isRuntimeLoaded = false
     private var pendingTranslatorName: String?
     private var runtimeLoadContinuation: CheckedContinuation<Void, Error>?
-    private var messageHandler: ((WKScriptMessage) -> Void)?
+    private var translatorLoadContinuation: CheckedContinuation<Void, Error>?
+    private var messageHandlers: [String: (WKScriptMessage) -> Void] = [:]
     
     public override init(frame: CGRect, configuration: WKWebViewConfiguration) {
         // Create a user content controller to handle JS messages
@@ -27,6 +28,23 @@ public class ZoteroWebView: WKWebView {
         
         // Set up message handlers
         userContentController.add(self, name: "zotero")
+        
+        // Register default message handlers
+        registerMessageHandler("runtimeLoaded") { [weak self] _ in
+            self?.runtimeLoadContinuation?.resume()
+            self?.runtimeLoadContinuation = nil
+        }
+        
+        registerMessageHandler("translatorLoaded") { [weak self] _ in
+            self?.translatorLoadContinuation?.resume()
+            self?.translatorLoadContinuation = nil
+        }
+        
+        registerMessageHandler("error") { [weak self] message in
+            if let errorMessage = (message.body as? [String: Any])?["error"] as? String {
+                self?.handleError(errorMessage)
+            }
+        }
         
         // Load the Zotero runtime
         Task {
@@ -48,6 +66,20 @@ public class ZoteroWebView: WKWebView {
         super.init(coder: coder)
     }
     
+    private func registerMessageHandler(_ type: String, handler: @escaping (WKScriptMessage) -> Void) {
+        messageHandlers[type] = handler
+    }
+    
+    private func handleError(_ errorMessage: String) {
+        if let continuation = runtimeLoadContinuation {
+            continuation.resume(throwing: ZoteroError.runtimeLoadFailed(errorMessage))
+            runtimeLoadContinuation = nil
+        } else if let continuation = translatorLoadContinuation {
+            continuation.resume(throwing: ZoteroError.translatorLoadFailed(errorMessage))
+            translatorLoadContinuation = nil
+        }
+    }
+    
     public func loadZoteroRuntime() async throws {
         // First, load the loader
         guard let loaderPath = Bundle.module.path(forResource: "loader", ofType: "js", inDirectory: "Resources/ZoteroJS"),
@@ -60,7 +92,7 @@ public class ZoteroWebView: WKWebView {
             throw ZoteroError.runtimeLoadFailed("Could not find ZoteroJS directory")
         }
         
-        // Load the loader and initialize Zotero
+        // Create the initialization script
         let script = """
         // Set base URL for Zotero modules
         window.ZOTERO_BASE_URL = '\(zoteroJSURL.absoluteString)';
@@ -81,15 +113,17 @@ public class ZoteroWebView: WKWebView {
         });
         """
         
+        // Create and add the user script
+        let userScript = WKUserScript(
+            source: script,
+            injectionTime: .atDocumentStart,
+            forMainFrameOnly: true
+        )
+        
+        configuration.userContentController.addUserScript(userScript)
+        
         return try await withCheckedThrowingContinuation { continuation in
             self.runtimeLoadContinuation = continuation
-            
-            evaluateJavaScript(script) { [weak self] (result, error) in
-                if let error = error {
-                    self?.runtimeLoadContinuation?.resume(throwing: ZoteroError.runtimeLoadFailed(error.localizedDescription))
-                    self?.runtimeLoadContinuation = nil
-                }
-            }
         }
     }
     
@@ -103,60 +137,73 @@ public class ZoteroWebView: WKWebView {
             throw ZoteroError.translatorLoadFailed("Could not find translator code")
         }
         
-        // First validate the JavaScript code
-        let validationScript = """
-        try {
-            console.log('Validating translator code...');
-            // Create a function from the translator code
-            const translatorFunction = new Function('return ' + `\(actualCode)`);
-            const translator = translatorFunction();
-            console.log('Translator validation successful');
-            true;
-        } catch (e) {
-            console.error('Translator validation failed:', e);
-            throw e;
-        }
-        """
-        
-        try await evaluateJavaScript(validationScript)
-        
-        print("Translator validation successful, initializing translator...")
-        // If we get here, the code is valid, so load it
+        // Create a wrapper script that will handle initialization and error reporting
         let script = """
-        try {
-            console.log('Initializing translator...');
-            // Wait for Zotero to be available
-            if (typeof Zotero === 'undefined') {
-                throw new Error('Zotero runtime not loaded');
+        (function() {
+            try {
+                console.log('Initializing translator...');
+                // Wait for Zotero to be available
+                if (typeof Zotero === 'undefined') {
+                    throw new Error('Zotero runtime not loaded');
+                }
+                
+                // Create a function from the translator code
+                const translatorFunction = new Function('return ' + `\(actualCode)`);
+                const translator = translatorFunction();
+                
+                // Validate required functions
+                const requiredFunctions = ['detectWeb', 'doWeb'];
+                for (const func of requiredFunctions) {
+                    if (typeof translator[func] !== 'function') {
+                        throw new Error(`Missing required function: ${func}`);
+                    }
+                }
+                
+                // Create a new translator instance
+                window.zoteroTranslator = new Zotero.Translator('web');
+                
+                // Copy the functions from our translator
+                window.zoteroTranslator.detectWeb = translator.detectWeb;
+                window.zoteroTranslator.doWeb = translator.doWeb;
+                window.zoteroTranslator.getSearchResults = translator.getSearchResults;
+                window.zoteroTranslator.scrape = translator.scrape;
+                
+                // Set up the translator
+                window.zoteroTranslator.setTranslator('951c027d-74ac-47d4-a107-9c3069ab7b48');
+                window.zoteroTranslator.setDocument(document);
+                
+                console.log('Translator initialized successfully');
+                window.webkit.messageHandlers.zotero.postMessage({
+                    type: 'translatorLoaded'
+                });
+            } catch (e) {
+                console.error('Error initializing translator:', e);
+                window.webkit.messageHandlers.zotero.postMessage({
+                    type: 'error',
+                    error: e.toString()
+                });
+                throw e;
             }
-            
-            // Create a function from the translator code
-            const translatorFunction = new Function('return ' + `\(actualCode)`);
-            const translator = translatorFunction();
-            
-            // Create a new translator instance
-            window.zoteroTranslator = new Zotero.Translator('web');
-            
-            // Copy the functions from our translator
-            window.zoteroTranslator.detectWeb = translator.detectWeb;
-            window.zoteroTranslator.doWeb = translator.doWeb;
-            window.zoteroTranslator.getSearchResults = translator.getSearchResults;
-            window.zoteroTranslator.scrape = translator.scrape;
-            
-            // Set up the translator
-            window.zoteroTranslator.setTranslator('951c027d-74ac-47d4-a107-9c3069ab7b48');
-            window.zoteroTranslator.setDocument(document);
-            
-            console.log('Translator initialized successfully');
-            true;
-        } catch (e) {
-            console.error('Error initializing translator:', e);
-            throw e;
-        }
+        })();
         """
         
-        try await evaluateJavaScript(script)
-        print("Translator loaded successfully")
+        // Create and add the user script
+        let userScript = WKUserScript(
+            source: script,
+            injectionTime: .atDocumentEnd,
+            forMainFrameOnly: true
+        )
+        
+        // Remove any existing translator scripts
+        configuration.userContentController.removeAllUserScripts()
+        
+        // Add the new translator script
+        configuration.userContentController.addUserScript(userScript)
+        
+        // Wait for the translator to be loaded
+        return try await withCheckedThrowingContinuation { continuation in
+            self.translatorLoadContinuation = continuation
+        }
     }
     
     public func loadTranslatorByName(_ translatorName: String) async throws {
@@ -176,19 +223,37 @@ public class ZoteroWebView: WKWebView {
     
     public func detectWeb() async throws -> String {
         let script = """
-        try {
-            if (!window.zoteroTranslator) {
-                throw new Error('Translator not initialized');
+        (function() {
+            try {
+                if (!window.zoteroTranslator) {
+                    throw new Error('Translator not initialized');
+                }
+                
+                // Validate translator state
+                if (!window.zoteroTranslator.detectWeb) {
+                    throw new Error('Translator missing detectWeb function');
+                }
+                
+                const type = window.zoteroTranslator.detectWeb(document, window.location.href);
+                if (!type) {
+                    throw new Error('No type detected');
+                }
+                
+                // Validate the detected type
+                if (typeof type !== 'string') {
+                    throw new Error('Invalid type returned: ' + typeof type);
+                }
+                
+                return type;
+            } catch (e) {
+                console.error('Error in detectWeb:', e);
+                window.webkit.messageHandlers.zotero.postMessage({
+                    type: 'error',
+                    error: e.toString()
+                });
+                throw e;
             }
-            const type = window.zoteroTranslator.detectWeb(document, window.location.href);
-            if (!type) {
-                throw new Error('No type detected');
-            }
-            type;
-        } catch (e) {
-            console.error('Error in detectWeb:', e);
-            throw e;
-        }
+        })();
         """
         
         guard let type = try await evaluateJavaScript(script) as? String else {
@@ -201,21 +266,56 @@ public class ZoteroWebView: WKWebView {
     public func scrapePage() async throws -> [[String: Any]] {
         print("Starting page scrape...")
         let script = """
-        try {
-            console.log('Executing doWeb...');
-            if (!window.zoteroTranslator) {
-                throw new Error('Translator not initialized');
+        (function() {
+            try {
+                console.log('Executing doWeb...');
+                if (!window.zoteroTranslator) {
+                    throw new Error('Translator not initialized');
+                }
+                
+                // Validate translator state
+                if (!window.zoteroTranslator.doWeb) {
+                    throw new Error('Translator missing doWeb function');
+                }
+                
+                const result = window.zoteroTranslator.doWeb(document, window.location.href);
+                
+                // Validate result
+                if (!result) {
+                    throw new Error('No result returned from doWeb');
+                }
+                
+                if (!Array.isArray(result)) {
+                    throw new Error('Invalid result type: ' + typeof result);
+                }
+                
+                // Validate each item in the result
+                for (let i = 0; i < result.length; i++) {
+                    const item = result[i];
+                    if (typeof item !== 'object') {
+                        throw new Error(`Invalid item type at index ${i}: ${typeof item}`);
+                    }
+                    
+                    // Check for required fields
+                    const requiredFields = ['itemType', 'title'];
+                    for (const field of requiredFields) {
+                        if (!(field in item)) {
+                            throw new Error(`Missing required field '${field}' in item at index ${i}`);
+                        }
+                    }
+                }
+                
+                console.log('doWeb completed with result:', result);
+                return result;
+            } catch (e) {
+                console.error('Error in doWeb:', e);
+                window.webkit.messageHandlers.zotero.postMessage({
+                    type: 'error',
+                    error: e.toString()
+                });
+                throw e;
             }
-            const result = window.zoteroTranslator.doWeb(document, window.location.href);
-            if (!result || !Array.isArray(result)) {
-                throw new Error('Invalid result from doWeb: ' + JSON.stringify(result));
-            }
-            console.log('doWeb completed with result:', result);
-            result;
-        } catch (e) {
-            console.error('Error in doWeb:', e);
-            throw e;
-        }
+        })();
         """
         
         guard let items = try await evaluateJavaScript(script) as? [[String: Any]] else {
@@ -235,26 +335,12 @@ public class ZoteroWebView: WKWebView {
             window.zoteroResolveSelection(\(selectedItems));
         """)
     }
-}
-
-// MARK: - WKScriptMessageHandler
-extension ZoteroWebView: WKScriptMessageHandler {
+    
+    // MARK: - WKScriptMessageHandler
     public func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-        guard let body = message.body as? [String: Any] else { return }
+        guard let body = message.body as? [String: Any],
+              let type = body["type"] as? String else { return }
         
-        switch body["type"] as? String {
-        case "runtimeLoaded":
-            runtimeLoadContinuation?.resume()
-            runtimeLoadContinuation = nil
-            
-        case "error":
-            if let errorMessage = body["error"] as? String {
-                runtimeLoadContinuation?.resume(throwing: ZoteroError.runtimeLoadFailed(errorMessage))
-                runtimeLoadContinuation = nil
-            }
-            
-        default:
-            break
-        }
+        messageHandlers[type]?(message)
     }
 } 

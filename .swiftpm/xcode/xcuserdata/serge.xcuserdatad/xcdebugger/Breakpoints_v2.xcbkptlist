@@ -14,86 +14,10 @@
             filePath = "Tests/BEZoteroTranslatorsTests/BEZoteroTranslatorsTests.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "70"
-            endingLineNumber = "70"
+            startingLineNumber = "60"
+            endingLineNumber = "60"
             landmarkName = "testWashingtonPostArticle()"
             landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "BD7345CE-1E55-474B-8B75-3CFCE17B62FC"
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "Sources/BEZoteroTranslators/ZoteroWebView.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "30"
-            endingLineNumber = "30"
-            landmarkName = "init(frame:configuration:)"
-            landmarkType = "7">
-            <Locations>
-               <Location
-                  uuid = "BD7345CE-1E55-474B-8B75-3CFCE17B62FC - 5b4d2050b092cda5"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "closure #1 (Swift.Optional&lt;Swift.Error&gt;) -&gt; () in BEZoteroTranslators.ZoteroWebView.init(frame: __C.CGRect, configuration: __C.WKWebViewConfiguration) -&gt; BEZoteroTranslators.ZoteroWebView"
-                  moduleName = "BEZoteroTranslatorsTests"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/serge/Documents/ProjectsRepositories/BEZoteroTranslators/Sources/BEZoteroTranslators/ZoteroWebView.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "30"
-                  endingLineNumber = "30">
-               </Location>
-               <Location
-                  uuid = "BD7345CE-1E55-474B-8B75-3CFCE17B62FC - 5b4d2050b092cda5"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "closure #1 (Swift.Optional&lt;Swift.Error&gt;) -&gt; () in BEZoteroTranslators.ZoteroWebView.init(frame: __C.CGRect, configuration: __C.WKWebViewConfiguration) -&gt; BEZoteroTranslators.ZoteroWebView"
-                  moduleName = "BEZoteroTranslatorsTests"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/serge/Documents/ProjectsRepositories/BEZoteroTranslators/Sources/BEZoteroTranslators/ZoteroWebView.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "30"
-                  endingLineNumber = "30">
-               </Location>
-            </Locations>
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "166715F3-3B9C-4A59-815A-1179E012CADD"
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "Tests/BEZoteroTranslatorsTests/BEZoteroTranslatorsTests.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "32"
-            endingLineNumber = "32"
-            landmarkName = "testZoteroWebViewDelegate()"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "ADE68535-5C44-4348-9C76-7F9C7B174138"
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "Tests/BEZoteroTranslatorsTests/BEZoteroTranslatorsTests.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "169"
-            endingLineNumber = "169">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

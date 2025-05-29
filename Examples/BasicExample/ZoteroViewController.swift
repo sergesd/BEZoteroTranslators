@@ -2,13 +2,14 @@ import UIKit
 import WebKit
 
 class ZoteroViewController: UIViewController {
-    private var zoteroWebView: ZoteroWebView!
+    private var webView: WKWebView!
+    private var zoteroManager: ZoteroManager!
     private var activityIndicator: UIActivityIndicatorView!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
-        setupZoteroWebView()
+        setupWebView()
     }
     
     private func setupUI() {
@@ -29,19 +30,22 @@ class ZoteroViewController: UIViewController {
         ]
     }
     
-    private func setupZoteroWebView() {
-        // Create and configure ZoteroWebView
-        zoteroWebView = ZoteroWebView(frame: .zero, configuration: WKWebViewConfiguration())
-        zoteroWebView.translatesAutoresizingMaskIntoConstraints = false
-        zoteroWebView.zoteroDelegate = self
-        view.addSubview(zoteroWebView)
+    private func setupWebView() {
+        // Create and configure WebView
+        webView = WKWebView(frame: .zero, configuration: WKWebViewConfiguration())
+        webView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(webView)
         
         NSLayoutConstraint.activate([
-            zoteroWebView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            zoteroWebView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            zoteroWebView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            zoteroWebView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            webView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            webView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            webView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            webView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
+        
+        // Create and configure ZoteroManager
+        zoteroManager = ZoteroManager(webView: webView)
+        zoteroManager.delegate = self
         
         // Load a sample translator
         loadSampleTranslator()
@@ -55,35 +59,55 @@ class ZoteroViewController: UIViewController {
             return
         }
         
-        zoteroWebView.loadTranslator(translatorCode)
+        Task {
+            do {
+                try await zoteroManager.loadTranslator(translatorCode)
+            } catch {
+                print("Error loading translator: \(error)")
+            }
+        }
     }
     
     @objc private func detectTapped() {
         activityIndicator.startAnimating()
-        zoteroWebView.detectWeb()
+        Task {
+            do {
+                let type = try await zoteroManager.detectWeb()
+                zoteroManager(_: zoteroManager, didDetectType: type)
+            } catch {
+                zoteroManager(_: zoteroManager, didFailWithError: error)
+            }
+        }
     }
     
     @objc private func scrapeTapped() {
         activityIndicator.startAnimating()
-        zoteroWebView.scrapePage()
+        Task {
+            do {
+                let items = try await zoteroManager.scrapePage()
+                zoteroManager(_: zoteroManager, didScrapeItems: items)
+            } catch {
+                zoteroManager(_: zoteroManager, didFailWithError: error)
+            }
+        }
     }
 }
 
-// MARK: - ZoteroWebViewDelegate
-extension ZoteroViewController: ZoteroWebViewDelegate {
-    func zoteroWebView(_ webView: ZoteroWebView, didDetectType type: String) {
+// MARK: - ZoteroManagerDelegate
+extension ZoteroViewController: ZoteroManagerDelegate {
+    func zoteroManager(_ manager: ZoteroManager, didDetectType type: String) {
         activityIndicator.stopAnimating()
         print("Detected type: \(type)")
         // Handle the detected type (e.g., show UI, enable/disable buttons)
     }
     
-    func zoteroWebView(_ webView: ZoteroWebView, didScrapeItems items: [[String: Any]]) {
+    func zoteroManager(_ manager: ZoteroManager, didScrapeItems items: [[String: Any]]) {
         activityIndicator.stopAnimating()
         print("Scraped items: \(items)")
         // Handle the scraped items (e.g., save to database, show in UI)
     }
     
-    func zoteroWebView(_ webView: ZoteroWebView, didFailWithError error: Error) {
+    func zoteroManager(_ manager: ZoteroManager, didFailWithError error: Error) {
         activityIndicator.stopAnimating()
         print("Error: \(error.localizedDescription)")
         // Show error to user
