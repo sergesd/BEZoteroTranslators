@@ -15,9 +15,12 @@ class ZoteroLoader {
     static async loadModule(path) {
         return new Promise((resolve, reject) => {
             const script = document.createElement('script');
-            script.src = path;
+            script.src = window.ZOTERO_BASE_URL + '/' + path;
             script.onload = resolve;
-            script.onerror = reject;
+            script.onerror = (error) => {
+                console.error('Failed to load module:', path, error);
+                reject(error);
+            };
             document.head.appendChild(script);
         });
     }

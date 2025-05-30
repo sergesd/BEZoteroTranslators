@@ -1,19 +1,21 @@
 # BEZoteroTranslators
 
-A Swift package that provides a minimal implementation of Zotero translators for iOS and macOS applications.
+A Swift package for integrating Zotero translators into iOS/macOS applications. This package provides a modern, Swift-native interface for using Zotero's web translators to scrape bibliographic data from web pages.
 
 ## Features
 
-- Run Zotero translators in WKWebView
-- Support for Safari Share Extension
-- Modular JavaScript runtime
-- Easy integration with existing apps
+- Modern Swift async/await API
+- Support for all Zotero translators
+- Built-in test case extraction and validation
+- Automatic translator registration and management
+- Thread-safe operation
+- Comprehensive error handling
 
 ## Requirements
 
-- iOS 14.0+ / macOS 11.0+
-- Xcode 13.0+
+- iOS 15.0+ / macOS 12.0+
 - Swift 5.5+
+- Xcode 13.0+
 
 ## Installation
 
@@ -33,70 +35,68 @@ dependencies: [
 
 ```swift
 import BEZoteroTranslators
+import WebKit
 
-class YourViewController: UIViewController, ZoteroWebViewDelegate {
-    private var zoteroWebView: ZoteroWebView!
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        
-        // Create and configure ZoteroWebView
-        zoteroWebView = ZoteroWebView(frame: .zero, configuration: WKWebViewConfiguration())
-        zoteroWebView.zoteroDelegate = self
-        view.addSubview(zoteroWebView)
-        
-        // Load a translator
-        if let translatorCode = loadTranslatorCode() {
-            zoteroWebView.loadTranslator(translatorCode)
-        }
-    }
-    
-    // MARK: - ZoteroWebViewDelegate
-    
-    func zoteroWebView(_ webView: ZoteroWebView, didDetectType type: String) {
-        print("Detected type: \(type)")
-    }
-    
-    func zoteroWebView(_ webView: ZoteroWebView, didScrapeItems items: [[String: Any]]) {
-        print("Scraped items: \(items)")
-    }
-    
-    func zoteroWebView(_ webView: ZoteroWebView, didFailWithError error: Error) {
-        print("Error: \(error.localizedDescription)")
-    }
-}
+// Create a WKWebView
+let webView = WKWebView(frame: .zero, configuration: WKWebViewConfiguration())
+
+// Create a ZoteroManager instance
+let manager = ZoteroManager(webView: webView)
+
+// Load the Zotero runtime
+try await manager.loadZoteroRuntime()
+
+// Register a translator
+try await manager.loadTranslator(translatorCode)
+
+// Scrape a webpage
+let items = try await manager.scrapePage()
 ```
 
-### Safari Share Extension
+### Managing Translators
 
 ```swift
-import BEZoteroTranslators
+// Register a translator from a file
+try TranslatorRegistry.shared.registerTranslatorFromFile(name: "My Translator", fileURL: translatorURL)
 
-class ShareViewController: UIViewController, ZoteroWebViewDelegate {
-    private var zoteroWebView: ZoteroWebView!
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        
-        // Create and configure ZoteroWebView
-        zoteroWebView = ZoteroWebView(frame: .zero, configuration: WKWebViewConfiguration())
-        zoteroWebView.zoteroDelegate = self
-        view.addSubview(zoteroWebView)
-        
-        // Load the page from the share extension
-        if let url = extensionContext?.inputItems.first as? NSExtensionItem,
-           let itemProvider = url.attachments?.first {
-            itemProvider.loadItem(forTypeIdentifier: "public.url", options: nil) { [weak self] (url, error) in
-                if let url = url as? URL {
-                    DispatchQueue.main.async {
-                        self?.loadPage(url: url)
-                    }
-                }
-            }
-        }
-    }
+// Get a registered translator
+if let translator = TranslatorRegistry.shared.getTranslator(name: "My Translator") {
+    // Use the translator
+    let testCases = try translator.extractTestCases()
 }
 ```
+
+### Error Handling
+
+The package provides comprehensive error handling through Swift's native error handling system:
+
+```swift
+do {
+    try await manager.loadZoteroRuntime()
+    let items = try await manager.scrapePage()
+} catch ZoteroError.runtimeLoadFailed {
+    // Handle runtime loading failure
+} catch ZoteroError.translatorLoadFailed {
+    // Handle translator loading failure
+} catch ZoteroError.scrapeFailed {
+    // Handle scraping failure
+} catch {
+    // Handle other errors
+}
+```
+
+## Testing
+
+The package includes a comprehensive test suite that demonstrates how to use the API and validate translator functionality. To run the tests:
+
+1. Clone the repository
+2. Open the project in Xcode
+3. Select the test target
+4. Press Cmd+U to run the tests
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
@@ -105,4 +105,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Acknowledgments
 
 - [Zotero](https://www.zotero.org/) for their translator system
-- [Zotero Translators](https://github.com/zotero/translators) for the translator code 
+- [ZoteroJS](https://github.com/zotero/zotero) for the JavaScript runtime 

@@ -3,6 +3,10 @@ import WebKit
 @testable import BEZoteroTranslators
 
 final class BEZoteroTranslatorsTests: XCTestCase {
+    private var webView: WKWebView!
+    private var manager: ZoteroManager!
+    private var pageLoadExpectation: XCTestExpectation?
+    
     override func setUp() {
         super.setUp()
         // Clear any previously registered translators
@@ -21,17 +25,23 @@ final class BEZoteroTranslatorsTests: XCTestCase {
         }
     }
     
-    func testZoteroWebViewInitialization() async throws {
-        let webView = await ZoteroWebView(frame: .zero, configuration: WKWebViewConfiguration())
-        XCTAssertNotNil(webView)
-        
-        // Wait for runtime to load
-        try await webView.loadZoteroRuntime()
+    override func tearDown() {
+        super.tearDown()
+        // Clean up any remaining translators
+        TranslatorRegistry.shared.clearTranslators()
+        manager?.cleanup()
+        manager = nil
+        webView = nil
+        pageLoadExpectation = nil
     }
     
-    func testZoteroWebViewDelegate() async {
-        let webView = await ZoteroWebView(frame: .zero, configuration: WKWebViewConfiguration())
-        XCTAssertNotNil(webView)
+    func testZoteroManagerInitialization() async throws {
+        webView = WKWebView(frame: .zero, configuration: WKWebViewConfiguration())
+        manager = ZoteroManager(webView: webView)
+        XCTAssertNotNil(manager)
+        
+        // Wait for runtime to load
+        try await manager.loadZoteroRuntime()
     }
     
     func testWashingtonPostArticle() async throws {
@@ -61,11 +71,13 @@ final class BEZoteroTranslatorsTests: XCTestCase {
             
             print("Running test case \(index + 1) of \(testCases.count)")
             
-            let webView = await ZoteroWebView()
+            // Create new instances for each test case
+            webView = WKWebView(frame: .zero, configuration: WKWebViewConfiguration())
+            manager = ZoteroManager(webView: webView)
             
             // Load the translator
             print("Loading translator...")
-            try await webView.loadTranslator(translator.getCode())
+            try await manager.loadTranslator(translator.getCode())
             
             // Load the test article URL
             guard let url = URL(string: testCase.url) else {
@@ -73,16 +85,20 @@ final class BEZoteroTranslatorsTests: XCTestCase {
                 return
             }
             print("Loading URL: \(url)")
+            
+            // Create expectation for page load
+            pageLoadExpectation = expectation(description: "Page load completed")
+            
+            // Load the page
             let request = URLRequest(url: url)
             webView.load(request)
             
-            // Wait for the page to load
-            print("Waiting for page to load...")
-            try await Task.sleep(nanoseconds: 5_000_000_000) // 5 seconds
+            // Wait for page load with timeout
+            await fulfillment(of: [pageLoadExpectation!], timeout: 30.0)
             
-            // Start scraping
+            // Start scraping (this will now wait for the page to load)
             print("Starting page scrape...")
-            let items = try await webView.scrapePage()
+            let items = try await manager.scrapePage()
             
             print("Scrape complete callback received with \(items.count) items")
             XCTAssertEqual(items.count, testCase.items.count, "Test case \(index): Expected \(testCase.items.count) items, got \(items.count)")
@@ -115,5 +131,45 @@ final class BEZoteroTranslatorsTests: XCTestCase {
                 }
             }
         }
+    }
+    
+    func testPageLoadError() async throws {
+        webView = WKWebView(frame: .zero, configuration: WKWebViewConfiguration())
+        manager = ZoteroManager(webView: webView)
+        
+        // Create expectation for page load failure
+        pageLoadExpectation = expectation(description: "Page load failed")
+        
+        // Try to load an invalid URL
+        let request = URLRequest(url: URL(string: "https://invalid-url-that-does-not-exist.com")!)
+        webView.load(request)
+        
+        // Wait for page load failure with timeout
+        await fulfillment(of: [pageLoadExpectation!], timeout: 30.0)
+        
+        // Attempt to scrape should fail with page load error
+        do {
+            _ = try await manager.scrapePage()
+            XCTFail("Expected page load error")
+        } catch ZoteroError.pageLoadFailed {
+            // Expected error
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+    }
+}
+
+// MARK: - WKNavigationDelegate
+extension BEZoteroTranslatorsTests: WKNavigationDelegate {
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        pageLoadExpectation?.fulfill()
+    }
+    
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        pageLoadExpectation?.fulfill()
+    }
+    
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        pageLoadExpectation?.fulfill()
     }
 } 

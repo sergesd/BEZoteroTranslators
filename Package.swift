@@ -18,7 +18,7 @@ let package = Package(
             name: "BEZoteroTranslators",
             dependencies: [],
             resources: [
-                .process("Resources/ZoteroJS")
+                .copy("Resources/ZoteroJS")
             ],
             swiftSettings: [
                 .define("DEBUG", .when(configuration: .debug))

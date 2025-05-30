@@ -45,7 +45,6 @@ class ZoteroViewController: UIViewController {
         
         // Create and configure ZoteroManager
         zoteroManager = ZoteroManager(webView: webView)
-        zoteroManager.delegate = self
         
         // Load a sample translator
         loadSampleTranslator()
@@ -73,9 +72,11 @@ class ZoteroViewController: UIViewController {
         Task {
             do {
                 let type = try await zoteroManager.detectWeb()
-                zoteroManager(_: zoteroManager, didDetectType: type)
+                print("Detected type: \(type)")
+                activityIndicator.stopAnimating()
             } catch {
-                zoteroManager(_: zoteroManager, didFailWithError: error)
+                print("Error detecting type: \(error)")
+                activityIndicator.stopAnimating()
             }
         }
     }
@@ -85,34 +86,12 @@ class ZoteroViewController: UIViewController {
         Task {
             do {
                 let items = try await zoteroManager.scrapePage()
-                zoteroManager(_: zoteroManager, didScrapeItems: items)
+                print("Scraped items: \(items)")
+                activityIndicator.stopAnimating()
             } catch {
-                zoteroManager(_: zoteroManager, didFailWithError: error)
+                print("Error scraping page: \(error)")
+                activityIndicator.stopAnimating()
             }
         }
-    }
-}
-
-// MARK: - ZoteroManagerDelegate
-extension ZoteroViewController: ZoteroManagerDelegate {
-    func zoteroManager(_ manager: ZoteroManager, didDetectType type: String) {
-        activityIndicator.stopAnimating()
-        print("Detected type: \(type)")
-        // Handle the detected type (e.g., show UI, enable/disable buttons)
-    }
-    
-    func zoteroManager(_ manager: ZoteroManager, didScrapeItems items: [[String: Any]]) {
-        activityIndicator.stopAnimating()
-        print("Scraped items: \(items)")
-        // Handle the scraped items (e.g., save to database, show in UI)
-    }
-    
-    func zoteroManager(_ manager: ZoteroManager, didFailWithError error: Error) {
-        activityIndicator.stopAnimating()
-        print("Error: \(error.localizedDescription)")
-        // Show error to user
-        let alert = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
-        present(alert, animated: true)
     }
 } 
