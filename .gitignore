@@ -1,3 +1,29 @@
+# macOS
 *.DS_Store
+
+# Xcode user data
 *.xcuserstate
-*/xcuserdata/*
+*.xcuserdata/
+*.xcuserdatad/
+.swiftpm/xcode/xcuserdata/
+
+# Build artifacts
+.build/
+DerivedData/
+
+# Swift Package Manager
+.swiftpm/
+!Package.resolved
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
