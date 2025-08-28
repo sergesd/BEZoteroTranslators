@@ -1,24 +1,29 @@
-// swift-tools-version:5.5
+// swift-tools-version:5.9
 import PackageDescription
 
 let package = Package(
     name: "BEZoteroTranslators",
     platforms: [
-        .iOS(.v14),
-        .macOS(.v11)
+        .iOS(.v17),
+        .macOS(.v14)
     ],
     products: [
         .library(
             name: "BEZoteroTranslators",
-            targets: ["BEZoteroTranslators"]),
+            targets: ["BEZoteroTranslators"]
+        ),
     ],
-    dependencies: [],
+    dependencies: [
+        .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.0")
+    ],
     targets: [
         .target(
             name: "BEZoteroTranslators",
-            dependencies: [],
+            dependencies: [
+                "ZIPFoundation"
+            ],
             resources: [
-                .copy("Resources/ZoteroJS")
+                .copy("Resources")
             ],
             swiftSettings: [
                 .define("DEBUG", .when(configuration: .debug))
@@ -26,9 +31,8 @@ let package = Package(
         ),
         .testTarget(
             name: "BEZoteroTranslatorsTests",
-            dependencies: ["BEZoteroTranslators"],
-            resources: [
-                .copy("Translators")
+            dependencies: [
+                "BEZoteroTranslators"
             ]),
     ]
 ) 

@@ -6,6 +6,9 @@ public enum ZoteroError: LocalizedError {
     case detectionFailed(String)
     case scrapingFailed(String)
     case pageLoadFailed(String)
+    case invalidURL(String)
+    case noTranslatorFound(String)
+    case translationFailed(String)
     
     public var errorDescription: String? {
         switch self {
@@ -19,6 +22,12 @@ public enum ZoteroError: LocalizedError {
             return "Failed to scrape page: \(message)"
         case .pageLoadFailed(let message):
             return "Failed to load page: \(message)"
+        case .invalidURL(let url):
+            return "Invalid URL: \(url)"
+        case .noTranslatorFound(let url):
+            return "No translator found for URL: \(url)"
+        case .translationFailed(let reason):
+            return "Translation failed: \(reason)"
         }
     }
 } 
