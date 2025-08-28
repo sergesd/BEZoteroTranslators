@@ -44,7 +44,6 @@ public final class ZoteroTranslators {
         
         // Create web view for translation
         let webView = WKWebView()
-        webView.configuration.preferences.javaScriptEnabled = true
         
         // Store strong reference to web view
         self.webView = webView
