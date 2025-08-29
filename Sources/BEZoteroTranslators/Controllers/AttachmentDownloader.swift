@@ -9,7 +9,7 @@ import Foundation
 
 /// Handles downloading of attachments (PDFs, images, documents, etc.)
 /// This is a simplified version of ZShare's AttachmentDownloader
-public class AttachmentDownloader {
+class AttachmentDownloader {
     
     // MARK: - Properties
     
@@ -143,7 +143,7 @@ public class AttachmentDownloader {
 
 // MARK: - Errors
 
-public enum AttachmentDownloaderError: Error, LocalizedError {
+    enum AttachmentDownloaderError: Error, LocalizedError {
     case invalidResponse
     case httpError(Int)
     case noData

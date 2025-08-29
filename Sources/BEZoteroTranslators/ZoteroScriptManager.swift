@@ -11,7 +11,7 @@ import WebKit
 
 /// Unified script manager that loads all Zotero runtime files including JSON data
 /// Follows a simple approach: load all scripts and JSON files in the correct order
-public class ZoteroScriptManager {
+class ZoteroScriptManager {
 
     /// Core Zotero runtime scripts including JSON files
     private let coreScripts = [
@@ -149,7 +149,7 @@ public class ZoteroScriptManager {
 
 // MARK: - Errors
 
-public enum ZoteroScriptError: Error, LocalizedError {
+    enum ZoteroScriptError: Error, LocalizedError {
     case scriptLoadFailed(String)
 
     public var errorDescription: String? {

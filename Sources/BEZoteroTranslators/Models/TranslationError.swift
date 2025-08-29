@@ -205,7 +205,7 @@ public struct TranslationErrorWithContext {
     }
     
     public var localizedDescription: String {
-        var description = error.localizedDescription ?? "Unknown error"
+        var description = error.localizedDescription
         
         if let url = context.url {
             description += " (URL: \(url.absoluteString))"

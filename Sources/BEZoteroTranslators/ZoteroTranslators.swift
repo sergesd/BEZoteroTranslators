@@ -327,39 +327,7 @@ public final class ZoteroTranslators {
         print("ExtensionViewModel: completed processing all \(data.count) items")
     }
     
-    /// Select the best item from a list of items (like ZShare does)
-    /// COMMENTED OUT: No longer used - we now process all items
-    /*
-    private func selectBestItem(from items: [[String: Any]]) -> [String: Any]? {
-        // Sort items to prioritize those with PDF attachments
-        let sortedItems = items.sorted { left, right -> Bool in
-            let leftAttachments = (left["attachments"] as? [[String: Any]]) ?? []
-            let rightAttachments = (right["attachments"] as? [[String: Any]]) ?? []
-            
-            let leftHasPDF = leftAttachments.contains { attachment in
-                guard let mimeType = attachment["mimeType"] as? String else { return false }
-                return mimeType == Self.defaultMimeType
-            }
-            
-            let rightHasPDF = rightAttachments.contains { attachment in
-                guard let mimeType = attachment["mimeType"] as? String else { return false }
-                return mimeType == Self.defaultMimeType
-            }
-            
-            // Prioritize items with PDF attachments
-            if leftHasPDF && !rightHasPDF {
-                return true
-            } else if !leftHasPDF && rightHasPDF {
-                return false
-            }
-            
-            // If both have or don't have PDFs, prioritize by number of attachments
-            return leftAttachments.count > rightAttachments.count
-        }
-        
-        return sortedItems.first
-    }
-    */
+    // Removed unused selectBestItem method - we now process all items
     
     /// Select items in the translation handler
     public func selectItems(_ items: [(String, String)]) {

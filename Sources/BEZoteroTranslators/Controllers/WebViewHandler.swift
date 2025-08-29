@@ -103,7 +103,7 @@ class WebViewHandler: NSObject {
             print("WebViewHandler: web view is nil")
             throw Error.webViewMissing
         }
-        webView.loadFileURL(fileUrl, allowingReadAccessTo: fileUrl.deletingLastPathComponent())
+        await webView.loadFileURL(fileUrl, allowingReadAccessTo: fileUrl.deletingLastPathComponent())
         try await waitForWebViewLoad()
     }
 
@@ -113,7 +113,7 @@ class WebViewHandler: NSObject {
             throw Error.webViewMissing
         }
         let request = URLRequest(url: webUrl)
-        webView.load(request)
+        await webView.load(request)
         try await waitForWebViewLoad()
     }
 

@@ -11,7 +11,7 @@ import WebKit
 @MainActor
 final class TranslationWebViewHandler: WebViewHandler {
     /// Actions that can be returned by this handler.
-    public enum Action {
+    enum Action {
         case loadedItems(data: [[String: Any]], cookies: String?, userAgent: String?, referrer: String?)
         case selectItem([(key: String, value: String)])
         case reportProgress(String)
@@ -369,7 +369,7 @@ final class TranslationWebViewHandler: WebViewHandler {
         case .log:
             print("TranslationWebViewHandler: JSLOG - \(body)")
             
-        default:
+        case _:
             print("TranslationWebViewHandler: Received unhandled message - \(name): \(body)")
         }
     }

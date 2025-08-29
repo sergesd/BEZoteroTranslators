@@ -5,12 +5,12 @@ import ZIPFoundation
 /// Enhanced translator management system using index-based URL matching
 /// Handles folder management and fast URL lookup using enhanced index.json
 @MainActor
-public final class TranslatorManager: ObservableObject {
+final class TranslatorManager: ObservableObject {
     
     // MARK: - Types
     
     /// Enhanced translator entry from index.json
-    public struct EnhancedTranslatorEntry: Codable, Hashable {
+    struct EnhancedTranslatorEntry: Codable, Hashable {
         public let id: String
         public let fileName: String
         public let lastUpdated: String
@@ -50,7 +50,7 @@ public final class TranslatorManager: ObservableObject {
     }
     
     /// Translator types (matching Zotero's enum)
-    public enum TranslatorType: Int, CaseIterable {
+    enum TranslatorType: Int, CaseIterable {
         case `import` = 1
         case export = 2
         case search = 3
@@ -68,7 +68,7 @@ public final class TranslatorManager: ObservableObject {
     
 
     
-    public enum TranslatorError: Error, LocalizedError {
+    enum TranslatorError: Error, LocalizedError {
         case folderCreationFailed
         case bundleExtractionFailed
         case indexNotFound
