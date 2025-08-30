@@ -19,7 +19,6 @@ public final class ZoteroTranslators {
     // Callbacks for translation results
     public var onTranslationResult: (([String: Any]) -> Void)?
     public var onSelectItems: (([(String, String)]) -> Void)?
-    public var onAttachmentDownloadProgress: ((String, Double) -> Void)?
     public var onTranslationProgress: ((String) -> Void)?
     
     // Attachment downloading configuration
@@ -87,11 +86,6 @@ public final class ZoteroTranslators {
         case selectItems([(key: String, value: String)])
     }
     
-    /// Progress reporting delegate
-    public protocol TranslationProgressDelegate: AnyObject {
-        func translationProgress(_ progress: String)
-    }
-    
     /// Process web page for translation using callbacks
     /// - Parameters:
     ///   - title: Page title
@@ -101,7 +95,6 @@ public final class ZoteroTranslators {
     ///   - frames: Frame data
     ///   - userAgent: User agent string
     ///   - referrer: Referrer URL
-    ///   - progressDelegate: Optional delegate for progress updates
     /// - Throws: TranslationError if translation fails
     @MainActor
     public func processWeb(
@@ -111,23 +104,12 @@ public final class ZoteroTranslators {
         cookies: String,
         frames: [String],
         userAgent: String,
-        referrer: String,
-        progressDelegate: TranslationProgressDelegate? = nil
+        referrer: String
     ) async throws {
         print("ExtensionViewModel: start translation")
         
         // Clean up attachments folder before starting new translation
         cleanupAttachmentsFolder()
-        
-        // Set up progress reporting
-        let progressHandler = ProgressHandler(delegate: progressDelegate)
-        
-        // Set up progress callback
-        let originalOnTranslationProgress = self.onTranslationProgress
-        self.onTranslationProgress = { progress in
-            progressHandler.reportProgress(progress)
-            originalOnTranslationProgress?(progress)
-        }
         
         // Start translation - results will be communicated via callbacks
         do {
@@ -158,21 +140,6 @@ public final class ZoteroTranslators {
         
         // Clean up attachments folder with delay to allow caller app to access files
         cleanupAttachmentsFolderWithDelay()
-    }
-    
-    // MARK: - Progress Handler
-    
-    /// Internal class to handle progress reporting
-    private class ProgressHandler {
-        private weak var delegate: TranslationProgressDelegate?
-        
-        init(delegate: TranslationProgressDelegate?) {
-            self.delegate = delegate
-        }
-        
-        func reportProgress(_ progress: String) {
-            delegate?.translationProgress(progress)
-        }
     }
     
     // MARK: - Private Methods
@@ -222,14 +189,6 @@ public final class ZoteroTranslators {
     /// Process items and handle attachment downloading if enabled
     @MainActor
     private func processItemsWithAttachments(_ data: [[String: Any]], cookies: String?, userAgent: String?, referrer: String?) async {
-        // COMMENTED OUT: Use intelligent item selection like ZShare
-        // let bestItem = selectBestItem(from: data)
-        // 
-        // guard let firstItem = bestItem else {
-        //     print("ExtensionViewModel: no items found in data")
-        //     return
-        // }
-        
         // If attachment downloading is not enabled, just return all items
         guard let attachmentDownloader = self.attachmentDownloader,
               let attachmentsFolderURL = self.attachmentsFolderURL else {
@@ -292,7 +251,7 @@ public final class ZoteroTranslators {
                 print("ExtensionViewModel: downloading PDF attachment '\(attachmentName)' from \(url)")
                 
                 // Report download start
-                self.onAttachmentDownloadProgress?(attachmentName, 0.0)
+                self.onTranslationProgress?("Downloading attachment '\(attachmentName)'... 0%")
                 
                 do {
                     let attachmentURL = try await attachmentDownloader.downloadAttachment(
@@ -307,7 +266,7 @@ public final class ZoteroTranslators {
                     print("ExtensionViewModel: PDF attachment '\(attachmentName)' downloaded to \(attachmentURL.path)")
                     
                     // Report download completion
-                    self.onAttachmentDownloadProgress?(attachmentName, 1.0)
+                    self.onTranslationProgress?("Downloaded attachment '\(attachmentName)' successfully")
                     
                     // No need to move file since it's already in the correct folder
                     print("ExtensionViewModel: attachment saved to \(attachmentURL.path)")
@@ -315,7 +274,7 @@ public final class ZoteroTranslators {
                 } catch {
                     print("ExtensionViewModel: failed to download PDF attachment '\(attachmentName)': \(error)")
                     // Report download failure
-                    self.onAttachmentDownloadProgress?(attachmentName, -1.0)
+                    self.onTranslationProgress?("Failed to download attachment '\(attachmentName)': \(error.localizedDescription)")
                 }
             }
             
@@ -326,8 +285,6 @@ public final class ZoteroTranslators {
         
         print("ExtensionViewModel: completed processing all \(data.count) items")
     }
-    
-    // Removed unused selectBestItem method - we now process all items
     
     /// Select items in the translation handler
     public func selectItems(_ items: [(String, String)]) {

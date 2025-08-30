@@ -10,12 +10,14 @@ import WebKit
 
 @MainActor
 final class TranslationWebViewHandler: WebViewHandler {
+
+    // Not used, yet, better to use with AsyncStream
     /// Actions that can be returned by this handler.
-    enum Action {
-        case loadedItems(data: [[String: Any]], cookies: String?, userAgent: String?, referrer: String?)
-        case selectItem([(key: String, value: String)])
-        case reportProgress(String)
-    }
+//    enum Action {
+//        case loadedItems(data: [[String: Any]], cookies: String?, userAgent: String?, referrer: String?)
+//        case selectItem([(key: String, value: String)])
+//        case reportProgress(String)
+//    }
 
     /// Handlers for communication with JS in `webView`
     enum JSHandlers: String, CaseIterable {
@@ -32,8 +34,6 @@ final class TranslationWebViewHandler: WebViewHandler {
         case incompatibleItem
         case javascriptCallMissingResult
         case noSuccessfulTranslators
-        case webExtractionMissingJs
-        case webExtractionMissingData
     }
     
     // Translation state for error classification
@@ -86,44 +86,6 @@ final class TranslationWebViewHandler: WebViewHandler {
     }
 
     // MARK: - Actions
-
-    func loadWebData(from url: URL) async throws -> RawAttachment {
-        print("TranslationWebViewHandler: load web data")
-        
-        try await performAfterInitialization()
-        try await load(webUrl: url)
-        
-        guard let url = Bundle.module.url(forResource: "webview_extraction", withExtension: "js"),
-              let script = try? String(contentsOf: url) else {
-            print("TranslationWebViewHandler: can't load extraction javascript")
-            throw Error.webExtractionMissingJs
-        }
-        
-        print("TranslationWebViewHandler: call data extraction js")
-        let data = try await call(javascript: script)
-        
-        guard let payload = data as? [String: Any],
-              let isFile = payload["isFile"] as? Bool,
-              let cookies = payload["cookies"] as? String,
-              let userAgent = payload["userAgent"] as? String,
-              let referrer = payload["referrer"] as? String else {
-            print("TranslationWebViewHandler: extracted data missing response")
-            print("\(String(describing: data as? [String: Any]))")
-            throw Error.webExtractionMissingData
-        }
-
-        if isFile, let contentType = payload["contentType"] as? String {
-            print("TranslationWebViewHandler: extracted file")
-            return .remoteFileUrl(url: url, contentType: contentType, cookies: cookies, userAgent: userAgent, referrer: referrer)
-        } else if let title = payload["title"] as? String, let html = payload["html"] as? String, let frames = payload["frames"] as? [String] {
-            print("TranslationWebViewHandler: extracted html")
-            return .web(title: title, url: url, html: html, cookies: cookies, frames: frames, userAgent: userAgent, referrer: referrer)
-        } else {
-            print("TranslationWebViewHandler: extracted data incompatible")
-            print("\(payload)")
-            throw Error.webExtractionMissingData
-        }
-    }
 
     /// Runs translation server against html content with cookies using async/await
     func translate(url: URL, title: String, html: String, cookies: String, frames: [String], userAgent: String, referrer: String) async throws {

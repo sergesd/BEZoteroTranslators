@@ -70,11 +70,6 @@ zoteroTranslators.onTranslationProgress = { progress in
     // Update UI with progress
 }
 
-zoteroTranslators.onAttachmentDownloadProgress = { attachmentName, progress in
-    print("Downloading \(attachmentName): \(Int(progress * 100))%")
-    // Update download progress UI
-}
-
 // Process a web page
 try await zoteroTranslators.processWeb(
     title: "Page Title",
@@ -116,15 +111,9 @@ let zoteroTranslators = try await ZoteroTranslators(
     attachmentsFolderURL: attachmentsFolder
 )
 
-// Monitor download progress
-zoteroTranslators.onAttachmentDownloadProgress = { attachmentName, progress in
-    if progress >= 1.0 {
-        print("Download completed: \(attachmentName)")
-    } else if progress < 0 {
-        print("Download failed: \(attachmentName)")
-    } else {
-        print("Downloading \(attachmentName): \(Int(progress * 100))%")
-    }
+// Monitor progress (including attachment downloads)
+zoteroTranslators.onTranslationProgress = { progress in
+    print("Progress: \(progress)")
 }
 
 // Downloaded attachments will be available in the specified folder
@@ -195,8 +184,7 @@ init(translatorsRootFolder: URL, enableAttachmentDownloading: Bool = false, atta
 
 - `onTranslationResult: (([String: Any]) -> Void)?` - Called when translation completes
 - `onSelectItems: (([(String, String)]) -> Void)?` - Called when item selection is needed
-- `onTranslationProgress: ((String) -> Void)?` - Called with progress updates
-- `onAttachmentDownloadProgress: ((String, Double) -> Void)?` - Called with download progress
+- `onTranslationProgress: ((String) -> Void)?` - Called with progress updates (including attachment downloads)
 
 #### Methods
 
