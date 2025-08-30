@@ -31,6 +31,7 @@ function extractData() {
     }
 
     return {"title": document.title,
+            "url": document.URL,
             "html": document.documentElement.innerHTML,
             "cookies": cookies,
             "frames": frames,
@@ -39,4 +40,10 @@ function extractData() {
             "referrer": document.referrer}
 }
 
-extractData();
+// Send data to Swift via WebKit message handler
+var pageData = extractData();
+if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.pageDataExtractor) {
+    window.webkit.messageHandlers.pageDataExtractor.postMessage(pageData);
+} else {
+    console.error('webview_extraction.js: WebKit message handler not available');
+}
