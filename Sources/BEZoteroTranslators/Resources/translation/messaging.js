@@ -28,34 +28,21 @@ const MESSAGE_TIMEOUT = 5 * 60 * 1000;
 Zotero.Messaging = new function() {
 	var _responseListeners = {};
 
-    this.receiveResponse = function(id, encodedPayload) {
-        console.log("Zotero.Messaging.receiveResponse called with id:", id);
-        
+    this.receiveResponse = async function(id, encodedPayload) {
     	var payload = {};
     	if (encodedPayload) {
-            console.log("Zotero.Messaging.receiveResponse: Processing encodedPayload");
     		payload = JSON.parse(decodeURIComponent(escape(window.atob(encodedPayload))));
     	}
 
-        console.log("Zotero.Messaging.receiveResponse: Looking for callback with id:", id);
         let callback = _responseListeners[id];
 
-        if (!callback) {
-            console.log("Zotero.Messaging.receiveResponse: No callback found for id:", id);
-            return;
-        }
+        if (!callback) return;
 
-        console.log("Zotero.Messaging.receiveResponse: Calling callback with payload");
         let response = callback(payload);
-        // Handle async responses without making this function async
+        // await for the response for error handling
         if (response && response.then) {
-            console.log("Zotero.Messaging.receiveResponse: Handling async response");
-            response.catch(function(error) {
-                console.log("Zotero.Messaging.receiveResponse: Response callback error:", error.message);
-            });
+            await response;
         }
-        console.log("Zotero.Messaging.receiveResponse: Function completed");
-        // Don't return anything to avoid WKErrorDomain Code=5
     };
 
     this.sendMessage = async function(handler, payload) {

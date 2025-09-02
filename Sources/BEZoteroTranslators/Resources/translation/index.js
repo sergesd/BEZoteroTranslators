@@ -94,26 +94,17 @@ async function translate(url, encodedHtml, encodedFrames) {
         translate.setTranslator(translator);
 
         try {
-            Zotero.debug("About to call translate() for translator: " + translator.label);
             const items = await translate.translate();
-            Zotero.debug("translate() completed successfully for: " + translator.label);
             if (Array.isArray(items)) {
-                Zotero.debug("Found array of items, count: " + items.length);
                 window.webkit.messageHandlers.itemResponseHandler.postMessage(items);
                 return;
             } else if (typeof items === 'object') {
-                Zotero.debug("Found single item object");
                 window.webkit.messageHandlers.itemResponseHandler.postMessage([items]);
                 return;
             }
-        } catch (e) {
-            Zotero.debug("Translator " + translator.label + " failed with error: " + e.message);
-            Zotero.debug("This is expected behavior - trying next translator");
-            // Continue to next translator - this is normal behavior
-        }
+        } catch (e) {}
     }
 
-    Zotero.debug("All translators failed, calling saveAsWeb");
     window.webkit.messageHandlers.saveAsWebHandler.postMessage(0);
 };
 
@@ -148,5 +139,5 @@ function decodeBase64(base64) {
 }
 
 window.addEventListener('DOMContentLoaded', function() {
-    Zotero.Debug.init(5);
+    Zotero.Debug.init(1);
 });
