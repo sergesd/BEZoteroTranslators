@@ -5,7 +5,7 @@ function extractData() {
     } catch (e) {}
 
     if (!document || !document.documentElement) {
-        return {"isFile": true, "contentType": document.contentType, "cookies": cookies, "userAgent": window.navigator.userAgent, "referrer": document.referrer}
+        return {"isFile": true, "contentType": document.contentType, "cookies": cookies, "userAgent": window.navigator.userAgent, "referrer": document.referrer};
     }
 
     let allFrames = document.querySelectorAll('iframe, frame');
@@ -37,7 +37,7 @@ function extractData() {
             "frames": frames,
             "isFile": false,
             "userAgent": window.navigator.userAgent,
-            "referrer": document.referrer}
+            "referrer": document.referrer};
 }
 
 // Send data to Swift via WebKit message handler
@@ -45,5 +45,5 @@ var pageData = extractData();
 if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.pageDataExtractor) {
     window.webkit.messageHandlers.pageDataExtractor.postMessage(pageData);
 } else {
-    console.error('webview_extraction.js: WebKit message handler not available');
+    console.error("webview_extraction.js: WebKit message handler not available");
 }

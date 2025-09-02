@@ -290,35 +290,44 @@ Zotero.Utilities.Translate.prototype.processDocuments = async function (urls, pr
 * Send an asynchronous HTTP request, returning a promise.
 *
 * @param {string} url URL to request
-* @param {string} [options.method=GET] The method of the request ("GET", "POST", etc.)
-* @param {object} [options.requestHeaders] HTTP headers to send with the request
+* @param {string} [options.method='GET'] The method of the request ("GET", "POST", etc.)
+* @param {object} [options.headers] HTTP headers to send with the request
+* @param {number[] | false} [options.successCodes] If false, all responses will be considered successful.
+ * 		Otherwise, an array of successful status codes. Defaults to 2xx.
 * @param {string} [options.body] The request's body
 * @param {string} [options.responseCharset] The charset the response should be interpreted as
 * @param {string} [options.responseType] 'text', 'json', or 'document'.
 * 	If 'json', the response's body will be parsed with JSON.parse before being returned.
 * 	If 'document', the response's body will be parsed as an HTML document (like deprecated processDocuments).
 * @return {Promise<object>} A promise resolved with an object containing status,
-* 	headers, and body attributes if the request succeeds.
-* 	If the browser is offline or the response contains a non-2XX status code,
+* 	responseURL, headers, and body attributes if the request succeeds.
+* 	If the browser is offline or the response contains a non-successful status code,
 * 	the promise will be rejected with a Zotero.HTTP.UnexpectedStatusException.
 */
 Zotero.Utilities.Translate.prototype.request = async function (url, options = {}) {
 	url = this._translate.resolveURL(url);
+	
+	let parsedURL = new URL(url);
+	if (!['http:', 'https:'].includes(parsedURL.protocol)) {
+		throw new Error(`Translator cannot make ${parsedURL.protocol} request`);
+	}
 
 	let method = options.method || 'GET';
 
 	let internalOptions = {
 		headers: Object.assign({}, this._translate.requestHeaders, options.headers),
+		successCodes: options.successCodes,
 		body: options.body,
 		responseCharset: options.responseCharset,
 		responseType: options.responseType,
 		cookieSandbox: this._translate.cookieSandbox
 	};
 
-	// If the request fails or a non-2XX status is returned, Zotero.HTTP.request rejects its promise.
+	// If the request fails or a non-successful status is returned, Zotero.HTTP.request rejects its promise.
 	// We let the Zotero.HTTP.UnexpectedStatusException bubble up to the caller.
 	let xhr = await Zotero.HTTP.request(method, url, internalOptions);
 	let status = xhr.status;
+	let responseURL = xhr.responseURL;
 	let headers = {};
 	xhr.getAllResponseHeaders()
 		.trim()
@@ -333,6 +342,7 @@ Zotero.Utilities.Translate.prototype.request = async function (url, options = {}
 
 	return {
 		status,
+		responseURL,
 		headers,
 		body
 	};

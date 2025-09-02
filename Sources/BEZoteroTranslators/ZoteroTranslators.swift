@@ -39,7 +39,7 @@ public final class ZoteroTranslators {
         print("ZoteroTranslators: Initializing with translators folder: \(translatorsRootFolder.path) and attachmentsFolderURL: \(attachmentsFolderURL?.path ?? "not set")")
         
         // Initialize translator manager
-        self.translatorManager = try await TranslatorManager(translatorsRootFolder: translatorsRootFolder)
+        self.translatorManager = try TranslatorManager(translatorsRootFolder: translatorsRootFolder)
         
         // Create web view for translation
         let webView = WKWebView()
@@ -328,7 +328,7 @@ public final class ZoteroTranslators {
     /// Get the ExtensionScript.js content for web page data extraction
     /// - Returns: The JavaScript content as a string, or nil if not found
     public static func getExtensionScript() -> String? {
-        guard let scriptURL = Bundle.module.url(forResource: "ExtensionScript", withExtension: "js", subdirectory: "Resources") else {
+        guard let scriptURL = Bundle.module.url(forResource: "ExtensionScript", withExtension: "js") else {
             print("❌ ZoteroTranslators: Could not find ExtensionScript.js in bundle")
             return nil
         }
@@ -346,30 +346,22 @@ public final class ZoteroTranslators {
     /// Get the webview_extraction.js content for enhanced web page data extraction
     /// - Returns: The JavaScript content as a string, or nil if not found
     public static func getWebViewExtractionScript() -> String? {
-        print("🔧 ZoteroTranslators: Looking for webview_extraction.js in bundle...")
-        print("🔧 Bundle.module: \(Bundle.module)")
+        print("🔧 getWebViewExtractionScript() called")
         
-        // List all resources in the bundle for debugging
-        if let resourcePath = Bundle.module.resourcePath {
-            print("🔧 Resource path: \(resourcePath)")
-            do {
-                let contents = try FileManager.default.contentsOfDirectory(atPath: resourcePath)
-                print("🔧 Bundle contents: \(contents)")
-            } catch {
-                print("🔧 Could not list bundle contents: \(error)")
-            }
-        }
+        print("Bundle.module path: \(Bundle.module.bundlePath)")
+        print("Bundle.main path: \(Bundle.main.bundlePath)")
         
-        guard let scriptURL = Bundle.module.url(forResource: "webview_extraction", withExtension: "js", subdirectory: "Resources") else {
+        guard let scriptURL = Bundle.module.url(forResource: "webview_extraction", withExtension: "js") else {
             print("❌ ZoteroTranslators: Could not find webview_extraction.js in bundle")
             return nil
         }
         
-        print("🔧 Found script URL: \(scriptURL)")
-        
         do {
             let scriptContent = try String(contentsOf: scriptURL, encoding: .utf8)
-            print("✅ ZoteroTranslators: Successfully loaded webview_extraction.js (\(scriptContent.count) characters)")
+            print("✅ Script loaded successfully")
+            print(" Content length: \(scriptContent.count)")
+            print("🔍 First 100 chars: \(String(scriptContent.prefix(100)))")
+            print(" Last 100 chars: \(String(scriptContent.suffix(100)))")
             return scriptContent
         } catch {
             print("❌ ZoteroTranslators: Failed to load webview_extraction.js: \(error)")

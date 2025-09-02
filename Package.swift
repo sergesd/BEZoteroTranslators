@@ -13,15 +13,11 @@ let package = Package(
             targets: ["BEZoteroTranslators"]
         ),
     ],
-    dependencies: [
-        .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.0")
-    ],
+    dependencies: [],
     targets: [
         .target(
             name: "BEZoteroTranslators",
-            dependencies: [
-                "ZIPFoundation"
-            ],
+            dependencies: [],
             resources: [
                 .copy("Resources")
             ],

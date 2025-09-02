@@ -1,9 +1,8 @@
 import Foundation
 import CryptoKit
-import ZIPFoundation
 
 /// Enhanced translator management system using index-based URL matching
-/// Handles folder management and fast URL lookup using enhanced index.json
+/// Expects translators folder to be populated by the app using BEZoteroTranslatorsInstaller
 @MainActor
 final class TranslatorManager: ObservableObject {
     
@@ -66,37 +65,32 @@ final class TranslatorManager: ObservableObject {
         }
     }
     
-
-    
     enum TranslatorError: Error, LocalizedError {
-        case folderCreationFailed
-        case bundleExtractionFailed
         case indexNotFound
         case invalidIndexData
         case translatorNotFound
         case invalidTranslatorData
+        case translatorsNotInstalled
         
         public var errorDescription: String? {
             switch self {
-            case .folderCreationFailed:
-                return "Failed to create translators folder"
-            case .bundleExtractionFailed:
-                return "Failed to extract translators from bundle"
             case .indexNotFound:
-                return "Enhanced index.json not found"
+                return "Enhanced index.json not found - translators may not be installed"
             case .invalidIndexData:
                 return "Invalid index data"
             case .translatorNotFound:
                 return "Translator not found"
             case .invalidTranslatorData:
                 return "Invalid translator data"
+            case .translatorsNotInstalled:
+                return "Translators are not installed - use BEZoteroTranslatorsInstaller first"
             }
         }
     }
     
     // MARK: - Properties
     
-    /// The folder where translators are stored
+    /// The folder where translators are stored (expected to be populated by app)
     public let translatorsFolder: URL
     
     /// Enhanced index data for fast URL matching
@@ -108,29 +102,21 @@ final class TranslatorManager: ObservableObject {
     /// Cache for dependency resolution
     private var dependencyCache: [String: Set<String>] = [:]
     
-    /// Bundle containing translator resources
-    private let bundle: Bundle = Bundle.module
-        
     // MARK: - Initialization
     
-    public init(translatorsRootFolder: URL) async throws {
+    public init(translatorsRootFolder: URL) throws {
         self.translatorsFolder = translatorsRootFolder.appendingPathComponent("Translators")
         
-        print("TranslatorManager: Initializing with folder: \(self.translatorsFolder.path)")
-        
-        // Create translators folder if needed
-        try createTranslatorsFolderIfNeeded()
-        
-        // Extract translators from bundle if needed
-        try await extractTranslatorsFromBundleIfNeeded()
+        // Verify translators are installed
+        try verifyTranslatorsInstalled()
         
         // Load enhanced index
         try loadEnhancedIndex()
         
-        print("TranslatorManager: Initialization complete")
+        print("TranslatorManager: Initialized with \(enhancedIndex.count) translators")
     }
     
-
+    // MARK: - Public Methods
     
     /// Get translators matching a URL with dependencies
     /// Returns sorted by priority (highest first) and includes all dependencies
@@ -210,8 +196,24 @@ final class TranslatorManager: ObservableObject {
         return metadata
     }
     
-    /// Find dependencies for a translator by scanning for setTranslator() calls
-    /// Uses regex pattern to detect UUID references in setTranslator() calls
+    /// Get all translator IDs (including dependencies) for a given URL
+    public func translatorIds(matching url: String, types: Set<TranslatorType> = Set(TranslatorType.allCases)) async throws -> [String] {
+        let translators = try await self.translators(matching: url, types: types)
+        return translators.map { $0.id }
+    }
+    
+    // MARK: - Private Methods
+    
+    private func verifyTranslatorsInstalled() throws {
+        let indexFile = translatorsFolder.appendingPathComponent("index.json")
+        let commitHashFile = translatorsFolder.appendingPathComponent("commit_hash")
+        
+        guard FileManager.default.fileExists(atPath: indexFile.path) && 
+              FileManager.default.fileExists(atPath: commitHashFile.path) else {
+            throw TranslatorError.translatorsNotInstalled
+        }
+    }
+    
     private func findDependencies(for translator: EnhancedTranslatorEntry) async throws -> Set<String> {
         // Check cache first
         if let cached = dependencyCache[translator.id] {
@@ -278,75 +280,6 @@ final class TranslatorManager: ObservableObject {
         return Array(allTranslators)
     }
     
-    /// Get all translator IDs (including dependencies) for a given URL
-    public func translatorIds(matching url: String, types: Set<TranslatorType> = Set(TranslatorType.allCases)) async throws -> [String] {
-        let translators = try await self.translators(matching: url, types: types)
-        return translators.map { $0.id }
-    }
-    
-
-    
-    // MARK: - Private Methods
-    
-
-    
-    private func createTranslatorsFolderIfNeeded() throws {
-        let fileManager = FileManager.default
-        
-        // Create main translators folder
-        if !fileManager.fileExists(atPath: translatorsFolder.path) {
-            try fileManager.createDirectory(at: translatorsFolder, withIntermediateDirectories: true)
-            print("TranslatorManager: Created translators folder")
-        }
-    }
-    
-    private func extractTranslatorsFromBundleIfNeeded() async throws {
-        let indexFile = translatorsFolder.appendingPathComponent("index.json")
-        let commitHashFile = translatorsFolder.appendingPathComponent("commit_hash")
-        
-        // Check if we already have the files and get current commit hash
-        var currentCommitHash: String?
-        if FileManager.default.fileExists(atPath: indexFile.path) && FileManager.default.fileExists(atPath: commitHashFile.path) {
-            currentCommitHash = try? String(contentsOf: commitHashFile).trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-        
-        // Get bundle commit hash
-        guard let bundleCommitHashFile = bundle.url(forResource: "commit_hash", withExtension: nil, subdirectory: "Resources/translators") else {
-            throw TranslatorError.bundleExtractionFailed
-        }
-        
-        let bundleCommitHash = (try? String(contentsOf: bundleCommitHashFile))?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "unknown"
-        
-        // Check if we need to update (no files exist or commit hash differs)
-        if let currentHash = currentCommitHash, currentHash == bundleCommitHash {
-            print("TranslatorManager: Translators already extracted and up to date (commit: \(currentHash))")
-            return
-        }
-        
-        if let currentHash = currentCommitHash {
-            print("TranslatorManager: Updating translators from commit \(currentHash) to \(bundleCommitHash)")
-        } else {
-            print("TranslatorManager: Extracting translators for the first time (commit: \(bundleCommitHash))")
-        }
-        
-        // Clear existing files if updating
-        if currentCommitHash != nil {
-            try clearExistingTranslators()
-        }
-        
-        // Extract from bundle
-        guard let bundleZipURL = bundle.url(forResource: "translators", withExtension: "zip", subdirectory: "Resources/translators") else {
-            throw TranslatorError.bundleExtractionFailed
-        }
-        
-        print("TranslatorManager: Extracting translators from bundle")
-        
-        // Extract zip using ZIPFoundation
-        try FileManager.default.unzipItem(at: bundleZipURL, to: translatorsFolder)
-        
-        print("TranslatorManager: Translators extracted successfully")
-    }
-    
     private func loadEnhancedIndex() throws {
         let indexFile = translatorsFolder.appendingPathComponent("index.json")
         
@@ -363,22 +296,4 @@ final class TranslatorManager: ObservableObject {
             throw TranslatorError.invalidIndexData
         }
     }
-    
-    private func clearExistingTranslators() throws {
-        let fileManager = FileManager.default
-        
-        // Get all files in the translators folder
-        let contents = try fileManager.contentsOfDirectory(at: translatorsFolder, includingPropertiesForKeys: nil)
-        
-        // Remove all files except the folder itself
-        for fileURL in contents {
-            try fileManager.removeItem(at: fileURL)
-        }
-        
-        print("TranslatorManager: Cleared existing translator files")
-    }
-    
-    // MARK: - Zip Extraction
-    
-    // Note: Zip extraction is now handled by ZipExtractor utility class
 }
