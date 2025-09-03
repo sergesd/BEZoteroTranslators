@@ -216,20 +216,20 @@ final class TranslationWebViewHandler: WebViewHandler {
     // MARK: - Private Methods
 
     private func loadIndex() async throws -> () {
-        guard let indexUrl = Bundle.module.url(forResource: "index", withExtension: "html", subdirectory: "Resources/translation") else {
+        guard let indexUrl = Bundle.module.url(forResource: "index", withExtension: "html", subdirectory: "TranslationEngine/translation") else {
             throw Error.cantFindFile
         }
         return try await load(fileUrl: indexUrl)
     }
 
     private func loadBundledFiles() async throws -> (String, String) {
-        guard let schemaUrl = Bundle.module.url(forResource: "schema", withExtension: "json", subdirectory: "Resources/translation/translate/modules/utilities/resource/schema/global"),
+        guard let schemaUrl = Bundle.module.url(forResource: "schema", withExtension: "json", subdirectory: "TranslationEngine/translation/translate/modules/utilities/resource/schema/global"),
               let schemaData = try? Data(contentsOf: schemaUrl) else {
             print("TranslationWebViewHandler: can't load schema json")
             throw Error.cantFindFile
         }
 
-        guard let dateFormatsUrl = Bundle.module.url(forResource: "dateFormats", withExtension: "json", subdirectory: "Resources/translation/translate/modules/utilities/resource"),
+        guard let dateFormatsUrl = Bundle.module.url(forResource: "dateFormats", withExtension: "json", subdirectory: "TranslationEngine/translation/translate/modules/utilities/resource"),
               let dateFormatData = try? Data(contentsOf: dateFormatsUrl)
         else {
             print("TranslationWebViewHandler: can't load dateFormats json")

@@ -351,7 +351,7 @@ public final class ZoteroTranslators {
         print("Bundle.module path: \(Bundle.module.bundlePath)")
         print("Bundle.main path: \(Bundle.main.bundlePath)")
         
-        guard let scriptURL = Bundle.module.url(forResource: "webview_extraction", withExtension: "js", subdirectory: "Resources") else {
+        guard let scriptURL = Bundle.module.url(forResource: "webview_extraction", withExtension: "js", subdirectory: "TranslationEngine") else {
             print("❌ ZoteroTranslators: Could not find webview_extraction.js in Resources subdirectory")
             return nil
         }
