@@ -19,7 +19,7 @@ let package = Package(
             name: "BEZoteroTranslators",
             dependencies: [],
             resources: [
-                .copy("Resources")
+                .copy("Resources/TranslationEngine")
             ],
             swiftSettings: [
                 .define("DEBUG", .when(configuration: .debug))
