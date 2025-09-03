@@ -348,9 +348,6 @@ public final class ZoteroTranslators {
     public static func getWebViewExtractionScript() -> String? {
         print("🔧 getWebViewExtractionScript() called")
         
-        print("Bundle.module path: \(Bundle.module.bundlePath)")
-        print("Bundle.main path: \(Bundle.main.bundlePath)")
-        
         guard let scriptURL = Bundle.module.url(forResource: "webview_extraction", withExtension: "js", subdirectory: "TranslationEngine") else {
             print("❌ ZoteroTranslators: Could not find webview_extraction.js in Resources subdirectory")
             return nil
