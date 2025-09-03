@@ -1,0 +1,11 @@
+[submodule "Sources/BEZoteroTranslators/Resources/TranslationEngine/translation/translate"]
+	path = Sources/BEZoteroTranslators/Resources/TranslationEngine/translation/translate
+	url = https://github.com/zotero/translate.git
+
+[submodule "Sources/BEZoteroTranslators/Resources/TranslationEngine/translation/translate/modules/utilities"]
+	path = Sources/BEZoteroTranslators/Resources/TranslationEngine/translation/translate/modules/utilities
+	url = https://github.com/zotero/utilities.git
+
+[submodule "Sources/BEZoteroTranslators/Resources/TranslationEngine/translation/translate/modules/utilities/resource/schema/global"]
+	path = Sources/BEZoteroTranslators/Resources/TranslationEngine/translation/translate/modules/utilities/resource/schema/global
+	url = https://github.com/zotero/zotero-schema.git
