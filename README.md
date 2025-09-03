@@ -36,6 +36,94 @@ Or add it directly in Xcode:
 2. Enter the repository URL
 3. Select the version you want to use
 
+## Git Submodules
+
+This package uses git submodules to include external Zotero translator code. The submodule structure is:
+
+```
+Sources/BEZoteroTranslators/Resources/TranslationEngine/
+└── translation/
+    └── translate/ (git submodule)
+        ├── src/ (Zotero translator engine)
+        ├── modules/
+        │   └── utilities/ (git submodule)
+        │       └── resource/
+        │           └── schema/
+        │               └── global/ (git submodule)
+        └── example/ (sample translators)
+```
+
+### Managing Git Submodules
+
+#### Initial Setup
+When you first clone this repository, you need to initialize the submodules:
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/BEZoteroTranslators.git
+cd BEZoteroTranslators
+
+# Initialize and update all submodules
+git submodule update --init --recursive
+```
+
+#### Updating Submodules
+To get the latest versions of external translator code:
+
+```bash
+# Update all submodules to their latest versions
+git submodule update --remote --recursive
+
+# Or update specific submodules
+git submodule update --remote Sources/BEZoteroTranslators/Resources/TranslationEngine/translation/translate
+git submodule update --remote Sources/BEZoteroTranslators/Resources/TranslationEngine/translation/translate/modules/utilities
+git submodule update --remote Sources/BEZoteroTranslators/Resources/TranslationEngine/translation/translate/modules/utilities/resource/schema/global
+```
+
+#### Committing Submodule Updates
+After updating submodules, commit the changes:
+
+```bash
+# Add the updated submodule references
+git add Sources/BEZoteroTranslators/Resources/TranslationEngine/translation/translate
+git add Sources/BEZoteroTranslators/Resources/TranslationEngine/translation/translate/modules/utilities
+git add Sources/BEZoteroTranslators/Resources/TranslationEngine/translation/translate/modules/utilities/resource/schema/global
+
+# Commit with a descriptive message
+git commit -m "Update Zotero translator submodules to latest versions"
+```
+
+#### Submodule Status
+Check the status of all submodules:
+
+```bash
+# Show all submodules and their commit hashes
+git submodule status --recursive
+
+# Show which submodules have updates available
+git submodule foreach git fetch
+git submodule foreach git status
+```
+
+#### Troubleshooting Submodules
+If you encounter submodule issues:
+
+```bash
+# Reset all submodules to their expected state
+git submodule deinit -f .
+git submodule update --init --recursive
+
+# Or reset a specific submodule
+git submodule deinit -f Sources/BEZoteroTranslators/Resources/TranslationEngine/translation/translate
+git submodule update --init Sources/BEZoteroTranslators/Resources/TranslationEngine/translation/translate
+```
+
+### What Each Submodule Contains
+
+- **`translate`**: Core Zotero translator engine with RDF parsing, HTTP handling, and translator framework
+- **`utilities`**: Helper functions for date parsing, schema validation, and text processing
+- **`zotero-schema`**: Zotero item type schemas and validation rules
+
 ## Usage
 
 ### Basic Usage
