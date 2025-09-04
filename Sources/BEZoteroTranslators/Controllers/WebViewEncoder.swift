@@ -20,27 +20,7 @@ struct WebViewEncoder {
 
     /// Encodes as JSON payload so that it can be sent to webView.
     static func encodeAsJSONForJavascript(_ payload: Any) -> String {
-        do {
-            let data = try JSONSerialization.data(withJSONObject: payload, options: .prettyPrinted)
-            return self.encodeForJavascript(data)
-        } catch {
-            print("❌ WebViewEncoder: JSON serialization failed for payload type: \(type(of: payload))")
-            print("❌ WebViewEncoder: JSON serialization error: \(error)")
-            
-            // Try to identify the problematic part
-            if let dict = payload as? [String: Any] {
-                print("❌ WebViewEncoder: Payload is a dictionary with \(dict.count) keys")
-                for (key, value) in dict {
-                    do {
-                        _ = try JSONSerialization.data(withJSONObject: [key: value], options: [])
-                    } catch {
-                        print("❌ WebViewEncoder: Key '\(key)' with value type '\(type(of: value))' is not JSON serializable")
-                    }
-                }
-            }
-            
-            // Return a safe fallback
-            return "null"
-        }
+        let data = try? JSONSerialization.data(withJSONObject: payload, options: .prettyPrinted)
+        return self.encodeForJavascript(data)
     }
 }

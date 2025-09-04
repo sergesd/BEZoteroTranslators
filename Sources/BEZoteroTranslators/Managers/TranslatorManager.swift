@@ -1,10 +1,8 @@
 import Foundation
-import CryptoKit
 
 /// Enhanced translator management system using index-based URL matching
 /// Expects translators folder to be populated by the app using BEZoteroTranslatorsInstaller
-@MainActor
-final class TranslatorManager: ObservableObject {
+final class TranslatorManager {
     
     // MARK: - Types
     
@@ -12,12 +10,9 @@ final class TranslatorManager: ObservableObject {
     struct EnhancedTranslatorEntry: Codable, Hashable {
         public let id: String
         public let fileName: String
-        public let lastUpdated: String
         public let target: String
         public let priority: Int
         public let translatorType: Int
-        public let label: String
-        public let creator: String
         
         // Implement Hashable
         public func hash(into hasher: inout Hasher) {
@@ -37,31 +32,63 @@ final class TranslatorManager: ObservableObject {
                 let range = NSRange(url.startIndex..<url.endIndex, in: url)
                 return regex.firstMatch(in: url, range: range) != nil
             } catch {
-                print("TranslatorManager: Invalid regex pattern '\(target)' for translator '\(label)': \(error)")
+                print("TranslatorManager: Invalid regex pattern '\(target)' for translator '\(id)': \(error)")
                 return false
             }
         }
         
-        /// Get translator type as enum
-        public var type: TranslatorType {
-            return TranslatorType(rawValue: translatorType) ?? .web
+        /// Get translator types as array (handles combined types like 12 = Web + Search)
+        public var types: [TranslatorType] {
+            return TranslatorType.types(from: translatorType)
+        }
+        
+        /// Get primary translator type (first type found, for backward compatibility)
+        public var primaryType: TranslatorType {
+            return types.first ?? .web
+        }
+        
+        /// Get human-readable description of translator types
+        public var typeDescription: String {
+            return TranslatorType.description(for: translatorType)
         }
     }
     
-    /// Translator types (matching Zotero's enum)
+    /// Translator types (matching Zotero's bit flag system)
     enum TranslatorType: Int, CaseIterable {
-        case `import` = 1
-        case export = 2
-        case search = 3
-        case web = 4
+        case `import` = 1    // 2^0 = 1
+        case export = 2      // 2^1 = 2  
+        case web = 4         // 2^2 = 4
+        case search = 8      // 2^3 = 8
         
         public var description: String {
             switch self {
             case .import: return "Import"
             case .export: return "Export"
-            case .search: return "Search"
             case .web: return "Web"
+            case .search: return "Search"
             }
+        }
+        
+        /// Check if this type is included in a combined type value
+        /// - Parameter combinedType: The combined type value (e.g., 12 for Web + Search)
+        /// - Returns: True if this type is included in the combined type
+        func isIncluded(in combinedType: Int) -> Bool {
+            return (combinedType & self.rawValue) != 0
+        }
+        
+        /// Get all individual types from a combined type value
+        /// - Parameter combinedType: The combined type value
+        /// - Returns: Array of individual types
+        static func types(from combinedType: Int) -> [TranslatorType] {
+            return TranslatorType.allCases.filter { $0.isIncluded(in: combinedType) }
+        }
+        
+        /// Get description for a combined type value
+        /// - Parameter combinedType: The combined type value
+        /// - Returns: Human-readable description of the combined types
+        static func description(for combinedType: Int) -> String {
+            let types = types(from: combinedType)
+            return types.map { $0.description }.joined(separator: " + ")
         }
     }
     
@@ -96,9 +123,6 @@ final class TranslatorManager: ObservableObject {
     /// Enhanced index data for fast URL matching
     private var enhancedIndex: [EnhancedTranslatorEntry] = []
     
-    /// Cache for fast URL lookups
-    private var urlPatternCache: [String: [EnhancedTranslatorEntry]] = [:]
-    
     /// Cache for dependency resolution
     private var dependencyCache: [String: Set<String>] = [:]
     
@@ -122,24 +146,16 @@ final class TranslatorManager: ObservableObject {
     /// Returns sorted by priority (highest first) and includes all dependencies
     public func translators(matching url: String, types: Set<TranslatorType> = Set(TranslatorType.allCases)) async throws -> [EnhancedTranslatorEntry] {
         
-        // Check cache first
-        if let cached = urlPatternCache[url] {
-            let filtered = cached.filter { types.contains($0.type) }
-            // Load dependencies for cached results
-            return try await loadTranslatorsWithDependencies(translators: filtered)
-        }
-        
         // Find matching translators
         let matching = enhancedIndex.filter { entry in
-            guard types.contains(entry.type) else { return false }
+            // Check if any of the entry's types match the requested types
+            let entryTypes = Set(entry.types)
+            guard !entryTypes.isDisjoint(with: types) else { return false }
             return entry.matches(url: url)
         }
         
         // Sort by priority (highest first)
         let sorted = matching.sorted { $0.priority > $1.priority }
-        
-        // Cache the result
-        urlPatternCache[url] = sorted
         
         print("TranslatorManager: Found \(sorted.count) translators matching URL: \(url)")
         
@@ -247,7 +263,7 @@ final class TranslatorManager: ObservableObject {
         // Cache the result
         dependencyCache[translator.id] = dependencies
         
-        print("TranslatorManager: Found \(dependencies.count) dependencies for translator \(translator.label)")
+        print("TranslatorManager: Found \(dependencies.count) dependencies for translator \(translator.id)")
         return dependencies
     }
     
