@@ -8,6 +8,7 @@
 import Foundation
 import WebKit
 
+@MainActor
 class WebViewHandler: NSObject {
     enum Error: Swift.Error {
         case webViewMissing

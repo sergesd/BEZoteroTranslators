@@ -114,29 +114,32 @@ final class TranslationWebViewHandler: WebViewHandler {
         print("TranslationWebViewHandler: load translators")
         let translatorEntries = try await translatorManager.translators(matching: url.absoluteString)
         
-        // Load translator metadata for each entry
-        var translatorMetadata: [[String: Any]] = []
-        for entry in translatorEntries {
-            let translatorCode = try await translatorManager.loadTranslator(id: entry.id)
-            let metadata = try translatorManager.loadTranslatorMetadata(from: translatorCode)
-            translatorMetadata.append(metadata)
-        }
-        
-        // Encode complete translator data
+        // Load complete translator data (code and metadata) for each entry
         print("TranslationWebViewHandler: encode complete translator data")
         var completeTranslators: [[String: Any]] = []
         
-        for metadata in translatorMetadata {
-            guard let translatorID = metadata["translatorID"] as? String else { continue }
+        func translatorToSendToJS(translator: EnhancedTranslatorEntry, completeTranslators: inout [[String: Any]]) {
+            //var TRANSLATOR_REQUIRED_PROPERTIES = ["translatorID", "translatorType", "label", "creator",
+            //    "target", "priority", "lastUpdated"];
+
+            guard var metadata = translator.metadata,
+                  let code = translator.code else {
+                return
+            }
+
+            metadata["code"] = code
             
-            // Load the actual translator code
-            let translatorCode = try await translatorManager.loadTranslator(id: translatorID)
+            completeTranslators.append(metadata)
             
-            // Create complete translator object with both metadata and code
-            var completeTranslator = metadata
-            completeTranslator["code"] = translatorCode
-            
-            completeTranslators.append(completeTranslator)
+            if let dependencies = translator.dependencies {
+                for dependency in dependencies {
+                    translatorToSendToJS(translator: dependency, completeTranslators: &completeTranslators)
+                }
+            }
+        }
+        
+        for translator in translatorEntries {
+            translatorToSendToJS(translator: translator, completeTranslators: &completeTranslators)
         }
         
         let encodedTranslators = WebViewEncoder.encodeAsJSONForJavascript(completeTranslators)
