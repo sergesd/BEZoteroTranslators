@@ -27,3 +27,4 @@ enum TranslatorType: Int, CaseIterable {
         return types.map { $0.description }.joined(separator: " + ")
     }
 }
+

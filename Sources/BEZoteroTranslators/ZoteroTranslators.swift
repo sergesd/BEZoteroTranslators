@@ -343,28 +343,23 @@ public final class ZoteroTranslators {
         }
     }
     
-    /// Get the webview_extraction.js content for enhanced web page data extraction
-    /// - Returns: The JavaScript content as a string, or nil if not found
-    public static func getWebViewExtractionScript() -> String? {
-        print("🔧 getWebViewExtractionScript() called")
+    /// Cached webview extraction script - loaded once and reused for optimal performance
+    /// This script is essential for web page data extraction and should always be available
+    public static let webViewExtractionScript: String = {
+        print("🔄 ZoteroTranslators: Loading webview_extraction.js for caching...")
         
         guard let scriptURL = Bundle.module.url(forResource: "webview_extraction", withExtension: "js", subdirectory: "TranslationEngine") else {
-            print("❌ ZoteroTranslators: Could not find webview_extraction.js in Resources subdirectory")
-            return nil
+            fatalError("❌ ZoteroTranslators: Could not find webview_extraction.js in Resources subdirectory - this is a critical resource that must be available")
         }
         
         do {
             let scriptContent = try String(contentsOf: scriptURL, encoding: .utf8)
-            print("✅ Script loaded successfully")
-            print(" Content length: \(scriptContent.count)")
-            print("🔍 First 100 chars: \(String(scriptContent.prefix(100)))")
-            print(" Last 100 chars: \(String(scriptContent.suffix(100)))")
+            print("✅ ZoteroTranslators: webview_extraction.js cached successfully (\(scriptContent.count) characters)")
             return scriptContent
         } catch {
-            print("❌ ZoteroTranslators: Failed to load webview_extraction.js: \(error)")
-            return nil
+            fatalError("❌ ZoteroTranslators: Failed to load webview_extraction.js for caching: \(error) - this is a critical resource that must be available")
         }
-    }
+    }()
     
     // MARK: - Deinitializer
     

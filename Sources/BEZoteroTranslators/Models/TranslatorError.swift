@@ -26,3 +26,4 @@ enum TranslatorError: Error, LocalizedError {
         }
     }
 }
+
