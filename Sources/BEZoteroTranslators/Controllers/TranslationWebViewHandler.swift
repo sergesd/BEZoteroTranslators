@@ -124,6 +124,7 @@ final class TranslationWebViewHandler: WebViewHandler {
 
             guard var metadata = translator.metadata,
                   let code = translator.code else {
+                print("TranslationWebViewHandler: Skipping translator '\(translator.id)' - missing metadata or code")
                 return
             }
 
@@ -141,6 +142,8 @@ final class TranslationWebViewHandler: WebViewHandler {
         for translator in translatorEntries {
             translatorToSendToJS(translator: translator, completeTranslators: &completeTranslators)
         }
+        
+        print("TranslationWebViewHandler: Loaded \(translatorEntries.count) translator entries, sending \(completeTranslators.count) complete translators to JS")
         
         let encodedTranslators = WebViewEncoder.encodeAsJSONForJavascript(completeTranslators)
         try await execute(javascript: "initTranslators(\(encodedTranslators));")
@@ -304,8 +307,23 @@ final class TranslationWebViewHandler: WebViewHandler {
                 translationState = .completed
                 hasReceivedItems = true
                 
-                // Pass the actual cookies, userAgent, and referer that were used for translation
-                onLoadedItems?(info, cookies, userAgent, referer)
+                // For now, let's skip the itemToAPIJSON processing and just fix the Snapshot URLs in Swift
+                // We'll implement a simpler Swift-side fix for CURRENT_TIMESTAMP and Snapshot URLs
+                Task {
+                    do {
+                        let processedItems = try await processItemsInSwift(info)
+                        await MainActor.run {
+                            // Pass the actual cookies, userAgent, and referer that were used for translation
+                            self.onLoadedItems?(processedItems, self.cookies, self.userAgent, self.referer)
+                        }
+                    } catch {
+                        await MainActor.run {
+                            print("TranslationWebViewHandler: Failed to process items: \(error)")
+                            // Fall back to original items if processing fails
+                            self.onLoadedItems?(info, self.cookies, self.userAgent, self.referer)
+                        }
+                    }
+                }
             } else {
                 print("TranslationWebViewHandler: got incompatible body - \(body)")
                 translationState = .failed
@@ -337,6 +355,32 @@ final class TranslationWebViewHandler: WebViewHandler {
         case _:
             print("TranslationWebViewHandler: Received unhandled message - \(name): \(body)")
         }
+    }
+    
+    // MARK: - Item Processing
+    
+    /// Process translation items in Swift to fix CURRENT_TIMESTAMP (like ZShare does)
+    private func processItemsInSwift(_ items: [[String: Any]]) async throws -> [[String: Any]] {
+        print("TranslationWebViewHandler: Processing \(items.count) items in Swift")
+        
+        var processedItems: [[String: Any]] = []
+        
+        for (index, item) in items.enumerated() {
+            var processedItem = item
+            
+            // Fix CURRENT_TIMESTAMP in accessDate (same approach as ZShare)
+            if let accessDate = processedItem["accessDate"] as? String, accessDate == "CURRENT_TIMESTAMP" {
+                let formatter = ISO8601DateFormatter()
+                let currentDate = formatter.string(from: Date())
+                processedItem["accessDate"] = currentDate
+                print("TranslationWebViewHandler: Fixed accessDate for item \(index): \(currentDate)")
+            }
+            
+            processedItems.append(processedItem)
+        }
+        
+        print("TranslationWebViewHandler: Successfully processed \(processedItems.count) items in Swift")
+        return processedItems
     }
 }
 

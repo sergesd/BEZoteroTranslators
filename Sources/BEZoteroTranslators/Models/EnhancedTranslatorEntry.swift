@@ -63,7 +63,8 @@ struct EnhancedTranslatorEntry: Hashable, Decodable {
     
     /// Coding keys for JSON serialization (excludes cached data)
     private enum CodingKeys: String, CodingKey {
-        case id, fileName, target, priority, translatorType
+        case id, fileName, target, priority
+        case translatorType = "type"
     }
     
     /// Custom decoder - only decodes basic properties, sets cached data to nil
